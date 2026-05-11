@@ -1,3 +1,4 @@
+#ifndef GRAFICOS_H_INCLUDED
 #define GRAFICOS_H_INCLUDED
 
 #include <stdint.h>

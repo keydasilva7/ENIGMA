@@ -16,12 +16,12 @@ Usuario: Agusrc20
 Entrega: Si
 
 */
-#include <stdio.h>
-#include <stdlib.h>
 #include "GBT/gbt.h"
 #include "tetris.h"
-#include <time.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define ANCHO_VENTANA 128
 #define ALTO_VENTANA 128
@@ -29,10 +29,7 @@ Entrega: Si
 #define CANT_COLORES 16
 #define TAM_GRILLA 11
 
-
-
-tGBT_ColorRGB paletaCGA[CANT_COLORES] =
-{
+tGBT_ColorRGB paletaCGA[CANT_COLORES] = {
 
     /// 0-15: Colores CGA (16 colores)
     {0x00, 0x00, 0x00}, // 0:   Negro
@@ -52,33 +49,18 @@ tGBT_ColorRGB paletaCGA[CANT_COLORES] =
     {0xFF, 0xFF, 0x55}, // 14:  Amarillo
     {0xFF, 0xFF, 0xFF}  // 15:  Usado como transparente por GBT
 };
-int main(int argc, char* argv[])
-{
 
+int main() {
 
+  EstadoJuego estado;
 
-    return 0;
+  gbt_iniciar();
+  gbt_crear_ventana("Hola mundo", ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA);
+  inicializar_juego(&estado)
+
+      while (estado.game_over == 0) {}
+
+  gbt_esperar(16);
+  gbt_cerrar();
+  return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
