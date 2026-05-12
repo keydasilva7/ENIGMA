@@ -123,12 +123,103 @@ void dibujar(const uint8_t dibujo[][PIXELES_X_LADO], uint16_t oX, uint16_t oY)
     }
 }
 
+int puede_mover_pieza (EstadoJuego* estado, int dx, int dy)
+{
+    Tetromino* p= &estado->pieza_actual;//Puntero a pieza actual
+    int nuevaX, nuevaY;
+
+    for(int i=0; i < 4; i++)
+    {
+        for(int j=0; j < 4; j++)
+        {
+            if(p->forma[i][j])//si hay un bloque
+            {
+                //calculamos futura posicion
+                nuevaX = p->x + j + dx;
+                nuevaY = p->y + i + dy;
+
+                if(nuevaX<0)//verificamos borde izquierdo
+                    return 0;
+
+                if(nuevaX>=COLUMNAS)//verificamos borde derecho
+                    return 0;
+
+                if(nuevaY>=FILAS_TOTALES)//verificamos fondo
+                    return 0;
+
+                if(estado->tablero[nuevaY][nuevaX])//verificamos colision (si ya hay un bloque en esa posicion)
+                    return 0;
+
+            }
+        }
+    }
+
+    return 1; //no hubo problema, puede moverse la pieza
+}
+
 void mover_pieza(EstadoJuego* estado, int dx, int dy)
 {
+    if(puede_mover_pieza(estado, dx, dy))
+    {
+        estado->pieza_actual.x += dx;
+        estado->pieza_actual.y += dy;
+    }
+}
+
+void dibujar_pieza(EstadoJuego* estado)
+{
+    Tetromino *p = &estado->pieza_actual;
+    int fila, columna, pixelX, pixelY;
+
+    for(int i=0; i<4; i++)
+    {
+        for(int j=0; j<4; j++)
+        {
+            if(p->forma[i][j])//¿hay bloque?
+            {
+                //calculamos la pos real en el tablero
+                fila=p->y+i;
+                columna=p->x+j;
+
+                //convertimos de tablero a pixeles
+                pixelX = columna * (PIXELES_X_LADO + PX_PADDING);
+                pixelY = fila * (PIXELES_X_LADO + PX_PADDING);
+
+                //dibujamos el bloque
+                for(int y=0; y<PIXELES_X_LADO; y++)
+                {
+                    for(int x=0; x<PIXELES_X_LADO; x++)
+                    {
+                        gbt_dibujar_pixel(pixelX+x, pixelY+y, V);//dibujamos el pixel en pantalla
+                    }
+                }
+            }
+        }
+    }
 
 }
 
+void fijar_pieza(EstadoJuego* estado)
+{
+    Tetromino* p=&estado->pieza_actual;
+    int fila, columna;
 
+    for(int i=0; i<4; i++)
+    {
+        for(int j=0; j<4 ; j++)
+        {
+            if(p->forma[i][j])
+            {
+                fila=p->y+i;
+                columna=p->x+j;
+
+                estado->tablero[fila][columna]=1;
+            }
+        }
+    }
+
+
+}
 
 void generar_nueva_pieza(EstadoJuego* estado)
 {
@@ -136,7 +227,7 @@ void generar_nueva_pieza(EstadoJuego* estado)
 
     estado->pieza_actual = estado->pieza_siguiente;
 
-    // Configuramos la posici�n en el tablero de la pieza actual
+    // Configuramos la posición en el tablero de la pieza actual
     estado->pieza_actual.x = 4;
     estado->pieza_actual.y = 0;
 
