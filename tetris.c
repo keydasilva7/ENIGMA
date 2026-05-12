@@ -97,15 +97,28 @@ void copiar_pieza(int mat_forma[4][4], int mat_letra[4][4])
     }
 }
 
-void rotar_pieza(int origen[4][4], int destino[4][4])
+int rotar_pieza_actual(EstadoJuego* estado, int direccion)
 {
-    for(int i = 0; i < 4; i++)
+    Tetromino aux = estado->pieza_actual; // Hacemos una copia para probar
+    int nueva_forma[4][4];
+
+    rotar_matriz(aux.forma, nueva_forma, direccion > 0);
+
+    // Asignar nueva forma a la copia
+    for(int y=0; y<4; y++)
     {
-        for(int j = 0; j < 4; j++)
+        for(int x=0; x<4; x++)
         {
-            destino[j][3 - i] = origen[i][j];
+            aux.forma[y][x] = nueva_forma[y][x];
         }
     }
+
+    if (!colision(estado, &aux))
+    {
+        estado->pieza_actual = aux;
+        return 1;
+    }
+    return 0;
 }
 
 void dibujar(const uint8_t dibujo[][PIXELES_X_LADO], uint16_t oX, uint16_t oY)
@@ -123,9 +136,10 @@ void dibujar(const uint8_t dibujo[][PIXELES_X_LADO], uint16_t oX, uint16_t oY)
     }
 }
 
-int puede_mover_pieza (EstadoJuego* estado, int dx, int dy)
+int puede_mover_pieza (EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
 {
     Tetromino* p= &estado->pieza_actual;//Puntero a pieza actual
+
     int nuevaX, nuevaY;
 
     for(int i=0; i < 4; i++)
@@ -135,8 +149,8 @@ int puede_mover_pieza (EstadoJuego* estado, int dx, int dy)
             if(p->forma[i][j])//si hay un bloque
             {
                 //calculamos futura posicion
-                nuevaX = p->x + j + dx;
-                nuevaY = p->y + i + dy;
+                nuevaX = p->x + j + movimiento_en_x;
+                nuevaY = p->y + i + movimiento_en_y;
 
                 if(nuevaX<0)//verificamos borde izquierdo
                     return 0;
@@ -157,12 +171,12 @@ int puede_mover_pieza (EstadoJuego* estado, int dx, int dy)
     return 1; //no hubo problema, puede moverse la pieza
 }
 
-void mover_pieza(EstadoJuego* estado, int dx, int dy)
+void mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
 {
-    if(puede_mover_pieza(estado, dx, dy))
+    if(puede_mover_pieza(estado, movimiento_en_x, movimiento_en_y))
     {
-        estado->pieza_actual.x += dx;
-        estado->pieza_actual.y += dy;
+        estado->pieza_actual.x += movimiento_en_x;
+        estado->pieza_actual.y += movimiento_en_y;
     }
 }
 
@@ -201,7 +215,8 @@ void dibujar_pieza(EstadoJuego* estado)
 
 void fijar_pieza(EstadoJuego* estado)
 {
-    Tetromino* p=&estado->pieza_actual;
+    Tetromino *p=&estado->pieza_actual;
+
     int fila, columna;
 
     for(int i=0; i<4; i++)
@@ -211,9 +226,9 @@ void fijar_pieza(EstadoJuego* estado)
             if(p->forma[i][j])
             {
                 fila=p->y+i;
-                columna=p->x+j;
+                columna=p->x+j; //Para saber la posicion real en el tablero
 
-                estado->tablero[fila][columna]=1;
+                estado->tablero[fila][columna]=1; //Pintamos tablero
             }
         }
     }
@@ -260,4 +275,65 @@ void generar_nueva_pieza(EstadoJuego* estado)
     }
 
 }
+
+void borrar_lineas_completas(EstadoJuego* estado)
+{
+    int lineas_borradas_ahora = 0;
+
+
+    for (int fila = FILAS_TOTALES - 1; fila >= 0; fila--)// Recorremos el tablero de abajo hacia arriba
+    {
+        // Verificamos si la fila actual está completamente llena
+
+        int fila_llena = 1;
+        for (int col = 0; col < COLUMNAS; col++)
+        {
+            if (estado->tablero[fila][col] == 0) // Encontramos un espacio vacío
+            {
+                fila_llena = 0;
+                break;          // Dejamos de revisar esta fila
+            }
+        }
+
+
+        if (fila_llena)
+        {
+            lineas_borradas_ahora++;
+
+            // Hacer caer todas las filas que están por encima de la que borramos
+            for (int fila_arriba = fila; fila_arriba > 0; fila_arriba--)
+            {
+                for (int col = 0; col < COLUMNAS; col++)
+                {
+                    // Copiamos el color de la celda de arriba en la celda actual
+                    estado->tablero[fila_arriba][col] = estado->tablero[fila_arriba - 1][col];
+                }
+            }
+
+            // La fila superior (índice 0) ya no tiene a nadie arriba, se vacía (se llena de ceros)
+            for (int col = 0; col < COLUMNAS; col++)
+            {
+                estado->tablero[0][col] = 0;
+            }
+
+            // ¡TRUCO CLAVE! Como todas las filas cayeron, la fila que acaba de ocupar este
+            // lugar también podría estar llena. Por lo tanto, incrementamos 'fila' para
+            // que el 'fila--' del for nos vuelva a dejar en el mismo lugar y la reevalúe.
+            fila++;
+        }
+    }
+
+    // 3. Si borramos al menos una línea, actualizamos las estadísticas del jugador
+    if (lineas_borradas_ahora > 0)
+    {
+        estado->lineas += lineas_borradas_ahora;
+
+        // Sistema de puntos clásico (mientras más líneas rompes juntas, más puntos ganas)
+        if (lineas_borradas_ahora == 1) estado->puntos += 100;
+        else if (lineas_borradas_ahora == 2) estado->puntos += 300;
+        else if (lineas_borradas_ahora == 3) estado->puntos += 500;
+        else if (lineas_borradas_ahora == 4) estado->puntos += 800; // ¡TETRIS!
+    }
+}
+
 

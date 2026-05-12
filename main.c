@@ -55,6 +55,7 @@ int main()
 {
 
     EstadoJuego estado;
+    eGBT_Tecla tecla_tocada;
 
     gbt_iniciar();
     gbt_crear_ventana("Tetris", ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA);
@@ -65,9 +66,36 @@ int main()
 
     while (estado.game_over == 0)//GAME LOOP
     {
+        // 1.Procesar input
+
         gbt_procesar_entrada();
 
-        //gravedad
+        tecla_tocada=gbt_obtener_tecla_presionada();
+
+        if (tecla_tocada == GBTK_IZQUIERDA) //Verificamos si se puede mover
+        {
+            puede_mover_pieza(&estado,-1,0);
+
+
+        }
+        else if (tecla_tocada == GBTK_DERECHA)  //Verificamos si se puede mover
+        {
+            puede_mover_pieza(&estado,1,0);
+
+        }
+        else if (tecla == GBTK_ARRIBA || tecla == GBTK_ESPACIO) //Rotamos la pieza
+        {
+            rotar_pieza_actual(&estado,1);
+
+            if(tecla_tocada == GBTK_ABAJO)
+            {
+
+            }
+
+        }
+
+        // 2. Gravedad
+
         if(gbt_temporizador_consumir(timer_caida))
         {
             if(puede_mover_pieza(&estado, 0, 1))
@@ -78,19 +106,37 @@ int main()
             {
                 fijar_pieza(&estado);
 
+                borrar_lineas_completas(&estado);
+
                 generar_nueva_pieza(&estado);
+
+                if (!puede_mover_pieza(&estado, 0, 0)) //Si la pieza nueva choca con algo significa que ya se lleno
+                {
+                    estado.game_over = 1;
+                }
             }
 
         }
 
-        gbt_borrar_backbuffer(N);//borramos pantalla
+        // 3.Dibujado
+
+        gbt_borrar_backbuffer(N);//Borramos pantalla
 
         dibujar_pieza(&estado);
 
-        gbt_volcar_backbuffer();//mostramos
+        // (Opcional) Dibujar el puntaje o la pieza siguiente aquí
+
+        gbt_volcar_backbuffer();//Mandamos el nuevo dibujo al backbuffer
 
         gbt_esperar(16);
     }
-    gbt_cerrar();
+
+
+
+
+
+        gbt_cerrar();
+
+
     return 0;
 }

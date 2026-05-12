@@ -45,7 +45,7 @@ typedef struct
 
 } EstadoJuego;
 
-void rotar_pieza(int origen[4][4], int destino[4][4]);
+int rotar_pieza_actual(EstadoJuego* estado, int direccion);
 void dibujar(const uint8_t dibujo[][PIXELES_X_LADO], uint16_t oX, uint16_t oY);
 void inicializar_tablero(EstadoJuego* estado);
 void inicializar_estructura(EstadoJuego* estado);
@@ -55,6 +55,7 @@ void mover_pieza(EstadoJuego* estado, int dx, int dy);
 void dibujar_pieza(EstadoJuego* estado);
 void fijar_pieza(EstadoJuego* estado);
 void generar_nueva_pieza(EstadoJuego* estado);
+void borrar_lineas_completas(EstadoJuego* estado);
 
 
 
