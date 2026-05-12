@@ -29,7 +29,8 @@ Entrega: Si
 #define CANT_COLORES 16
 #define TAM_GRILLA 11
 
-tGBT_ColorRGB paletaCGA[CANT_COLORES] = {
+tGBT_ColorRGB paletaCGA[CANT_COLORES] =
+{
 
     /// 0-15: Colores CGA (16 colores)
     {0x00, 0x00, 0x00}, // 0:   Negro
@@ -50,17 +51,46 @@ tGBT_ColorRGB paletaCGA[CANT_COLORES] = {
     {0xFF, 0xFF, 0xFF}  // 15:  Usado como transparente por GBT
 };
 
-int main() {
+int main()
+{
 
-  EstadoJuego estado;
+    EstadoJuego estado;
 
-  gbt_iniciar();
-  gbt_crear_ventana("Hola mundo", ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA);
-  inicializar_juego(&estado)
+    gbt_iniciar();
+    gbt_crear_ventana("Tetris", ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA);
+    inicializar_juego(&estado);
 
-      while (estado.game_over == 0) {}
+    tGBT_Temporizador*timer_caida;
+    timer_caida=gbt_temporizador_crear(1.0);
 
-  gbt_esperar(16);
-  gbt_cerrar();
-  return 0;
+    while (estado.game_over == 0)//GAME LOOP
+    {
+        gbt_procesar_entrada();
+
+        //gravedad
+        if(gbt_temporizador_consumir(timer_caida))
+        {
+            if(puede_mover_pieza(&estado, 0, 1))
+            {
+                mover_pieza(&estado, 0, 1);
+            }
+            else
+            {
+                fijar_pieza(&estado);
+
+                generar_nueva_pieza(&estado);
+            }
+
+        }
+
+        gbt_borrar_backbuffer(N);//borramos pantalla
+
+        dibujar_pieza(&estado);
+
+        gbt_volcar_backbuffer();//mostramos
+
+        gbt_esperar(16);
+    }
+    gbt_cerrar();
+    return 0;
 }
