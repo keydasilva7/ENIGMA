@@ -2,37 +2,43 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="tetris.h" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="3" zoom_2="0">
+	<File name="tetris.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="3" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1242" topLine="24" />
+			<Cursor1 position="1592" topLine="21" />
+		</Cursor>
+	</File>
+	<File name="font8x8.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="658" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="main.c" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="3" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1395" topLine="44" />
+		</Cursor>
+	</File>
+	<File name="graficos.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="4" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="465" topLine="15" />
 		</Cursor>
 	</File>
 	<File name="graficos.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="4" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="100" topLine="0" />
+			<Cursor1 position="102" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="main.c" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="3" zoom_2="0">
+	<File name="tetris.c" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="3" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2260" topLine="66" />
-		</Cursor>
-	</File>
-	<File name="tetris.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="3" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1613" topLine="65" />
+			<Cursor1 position="3864" topLine="116" />
 		</Cursor>
 		<Folding>
-			<Collapse line="59" />
-			<Collapse line="67" />
-			<Collapse line="79" />
-			<Collapse line="88" />
 			<Collapse line="124" />
-			<Collapse line="139" />
-			<Collapse line="174" />
-			<Collapse line="183" />
-			<Collapse line="216" />
-			<Collapse line="239" />
-			<Collapse line="279" />
+			<Collapse line="152" />
+			<Collapse line="170" />
+			<Collapse line="186" />
+			<Collapse line="195" />
+			<Collapse line="218" />
+			<Collapse line="258" />
 		</Folding>
 	</File>
 </CodeBlocks_layout_file>

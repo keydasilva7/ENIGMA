@@ -5,6 +5,10 @@
 #include "tetris.h"
 
 
+int inicializar_graficos(int,int);
+void dibujar_bloque_cuadrado(int,int,int);
+void dibujar_pieza(EstadoJuego *);
+
 
 
 

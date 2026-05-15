@@ -61,7 +61,6 @@ void inicializar_juego(EstadoJuego* estado)
     inicializar_tablero(estado);
     inicializar_estructura(estado);
     generar_nueva_pieza(estado); // Crea la pieza que cae ahora
-    generar_nueva_pieza(estado);
 }
 
 void inicializar_tablero(EstadoJuego* estado)
@@ -100,6 +99,7 @@ void copiar_pieza(int mat_forma[4][4], int mat_letra[4][4])
 int rotar_pieza_actual(EstadoJuego* estado, int direccion)
 {
     Tetromino aux = estado->pieza_actual; // Hacemos una copia para probar
+
     int nueva_forma[4][4];
 
     rotar_matriz(aux.forma, nueva_forma, direccion > 0);
@@ -121,54 +121,66 @@ int rotar_pieza_actual(EstadoJuego* estado, int direccion)
     return 0;
 }
 
-void dibujar(const uint8_t dibujo[][PIXELES_X_LADO], uint16_t oX, uint16_t oY)
+int colision(EstadoJuego *estado, Tetromino *pieza)
 {
-    uint16_t offsetX = oX * (PIXELES_X_LADO + PX_PADDING);
-    uint16_t offsetY = oY * (PIXELES_X_LADO + PX_PADDING);
-
-    for (uint16_t y = 0; y < PIXELES_X_LADO; y++)
+    for (int y = 0; y < 4; y++)
     {
-        for (uint16_t x = 0; x < PIXELES_X_LADO; x++)
+        for (int x = 0; x < 4; x++)
         {
+            if (pieza->forma[y][x])
+            {
+                int tablero_x = pieza->x + x;
+                int tablero_y = pieza->y + y;
 
-            gbt_dibujar_pixel(offsetX + x, offsetY + y, dibujo[y][x]);
+                // Fuera de limites izquierdo, derecho, o fondo
+                if (tablero_x < 0 || tablero_x >= COLUMNAS || tablero_y >= FILAS_TOTALES)
+                {
+                    return 1;
+                }
+
+                // Colision con otra pieza en el tablero
+                if (tablero_y >= 0 && estado->tablero[tablero_y][tablero_x] != 0)
+                {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0; // No hay colision
+}
+
+void rotar_matriz(int origen[][4], int destino[][4], int a_la_derecha)
+{
+    for(int i = 0; i < 4; i++)
+    {
+        for(int j = 0; j < 4; j++)
+        {
+            if (a_la_derecha)
+            {
+                destino[j][3 - i] = origen[i][j];
+            }
+            else
+            {
+                destino[3 - j][i] = origen[i][j];
+            }
         }
     }
 }
 
-int puede_mover_pieza (EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
+int puede_mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
 {
-    Tetromino* p= &estado->pieza_actual;//Puntero a pieza actual
+    Tetromino aux = estado->pieza_actual;
 
-    int nuevaX, nuevaY;
+    aux.x += movimiento_en_x;
+    aux.y += movimiento_en_y;
 
-    for(int i=0; i < 4; i++)
+
+    if (colision(estado, &aux)) //Preguntamos si en ese lugar hay colision
     {
-        for(int j=0; j < 4; j++)
-        {
-            if(p->forma[i][j])//si hay un bloque
-            {
-                //calculamos futura posicion
-                nuevaX = p->x + j + movimiento_en_x;
-                nuevaY = p->y + i + movimiento_en_y;
-
-                if(nuevaX<0)//verificamos borde izquierdo
-                    return 0;
-
-                if(nuevaX>=COLUMNAS)//verificamos borde derecho
-                    return 0;
-
-                if(nuevaY>=FILAS_TOTALES)//verificamos fondo
-                    return 0;
-
-                if(estado->tablero[nuevaY][nuevaX])//verificamos colision (si ya hay un bloque en esa posicion)
-                    return 0;
-
-            }
-        }
+        return 0;
     }
 
-    return 1; //no hubo problema, puede moverse la pieza
+    return 1;
 }
 
 void mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
@@ -178,39 +190,6 @@ void mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
         estado->pieza_actual.x += movimiento_en_x;
         estado->pieza_actual.y += movimiento_en_y;
     }
-}
-
-void dibujar_pieza(EstadoJuego* estado)
-{
-    Tetromino *p = &estado->pieza_actual;
-    int fila, columna, pixelX, pixelY;
-
-    for(int i=0; i<4; i++)
-    {
-        for(int j=0; j<4; j++)
-        {
-            if(p->forma[i][j])//¿hay bloque?
-            {
-                //calculamos la pos real en el tablero
-                fila=p->y+i;
-                columna=p->x+j;
-
-                //convertimos de tablero a pixeles
-                pixelX = columna * (PIXELES_X_LADO + PX_PADDING);
-                pixelY = fila * (PIXELES_X_LADO + PX_PADDING);
-
-                //dibujamos el bloque
-                for(int y=0; y<PIXELES_X_LADO; y++)
-                {
-                    for(int x=0; x<PIXELES_X_LADO; x++)
-                    {
-                        gbt_dibujar_pixel(pixelX+x, pixelY+y, V);//dibujamos el pixel en pantalla
-                    }
-                }
-            }
-        }
-    }
-
 }
 
 void fijar_pieza(EstadoJuego* estado)

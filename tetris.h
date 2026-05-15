@@ -5,7 +5,7 @@
 #include "GBT/gbt.h"
 
 #define PIXELES_X_LADO 8 //medida de un bloque
-#define PX_PADDING 4 //separacion entre bloques
+#define PX_PADDING 1 //separacion entre bloques
 
 #define N 15 // Transparente
 #define A 14 // Amarillo
@@ -45,17 +45,20 @@ typedef struct
 
 } EstadoJuego;
 
-int rotar_pieza_actual(EstadoJuego* estado, int direccion);
-void dibujar(const uint8_t dibujo[][PIXELES_X_LADO], uint16_t oX, uint16_t oY);
-void inicializar_tablero(EstadoJuego* estado);
-void inicializar_estructura(EstadoJuego* estado);
-void inicializar_juego(EstadoJuego* estado);
-int puede_mover_pieza(EstadoJuego* estado, int dx, int dy);
-void mover_pieza(EstadoJuego* estado, int dx, int dy);
-void dibujar_pieza(EstadoJuego* estado);
-void fijar_pieza(EstadoJuego* estado);
-void generar_nueva_pieza(EstadoJuego* estado);
-void borrar_lineas_completas(EstadoJuego* estado);
+extern const int COLORES_PIEZAS[7];
+
+int rotar_pieza_actual(EstadoJuego *, int);
+int colision(EstadoJuego *,Tetromino *);
+void rotar_matriz(int [][4], int [][4], int );
+void inicializar_tablero(EstadoJuego *);
+void inicializar_estructura(EstadoJuego *);
+void inicializar_juego(EstadoJuego *);
+int puede_mover_pieza(EstadoJuego *, int,int);
+void mover_pieza(EstadoJuego *,int,int);
+void dibujar_pieza(EstadoJuego *);
+void fijar_pieza(EstadoJuego *);
+void generar_nueva_pieza(EstadoJuego *);
+void borrar_lineas_completas(EstadoJuego *);
 
 
 

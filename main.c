@@ -18,6 +18,7 @@ Entrega: Si
 */
 #include "GBT/gbt.h"
 #include "tetris.h"
+#include "graficos.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,8 +58,10 @@ int main()
     EstadoJuego estado;
     eGBT_Tecla tecla_tocada;
 
-    gbt_iniciar();
-    gbt_crear_ventana("Tetris", ANCHO_VENTANA, ALTO_VENTANA, ESCALA_VENTANA);
+    if(inicializar_graficos(ESCALA_VENTANA,0)==-1) //Cerramos programa
+        return -1;
+
+    gbt_aplicar_paleta(paletaCGA, 16, GBT_FORMATO_888);
     inicializar_juego(&estado);
 
     tGBT_Temporizador*timer_caida;
@@ -83,7 +86,7 @@ int main()
             puede_mover_pieza(&estado,1,0);
 
         }
-        else if (tecla == GBTK_ARRIBA || tecla == GBTK_ESPACIO) //Rotamos la pieza
+        else if (tecla_tocada == GBTK_ARRIBA || tecla_tocada == GBTK_ESPACIO) //Rotamos la pieza
         {
             rotar_pieza_actual(&estado,1);
 
@@ -120,7 +123,7 @@ int main()
 
         // 3.Dibujado
 
-        gbt_borrar_backbuffer(N);//Borramos pantalla
+        gbt_borrar_backbuffer(N); // Limpiar pantalla
 
         dibujar_pieza(&estado);
 
@@ -130,9 +133,6 @@ int main()
 
         gbt_esperar(16);
     }
-
-
-
 
 
         gbt_cerrar();
