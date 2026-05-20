@@ -10,3 +10,6 @@ obj/
 # Archivos ejecutables sueltos
 *.exe
 *.out
+bin/Debug/ENIGMA.exe
+ENIGMA.depend
+ENIGMA.layout
