@@ -1,8 +1,12 @@
-# Ejecutables
+# Carpetas de compilacion completas
+bin/
+obj/
+
+# Archivos de configuracion y dependencias del IDE
+*.depend
+*.layout
+*cscope*
+
+# Archivos ejecutables sueltos
 *.exe
 *.out
-main
-
-# Archivos objeto y temporales del compilador
-*.o
-*.obj
