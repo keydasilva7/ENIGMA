@@ -24,9 +24,6 @@ Entrega: Si
 #include <stdlib.h>
 #include <time.h>
 
-#define ANCHO_VENTANA 128
-#define ALTO_VENTANA 128
-#define ESCALA_VENTANA 5
 #define CANT_COLORES 16
 #define TAM_GRILLA 11
 
@@ -57,15 +54,50 @@ int main()
 
     EstadoJuego estado;
     eGBT_Tecla tecla_tocada;
+    ResolucionVentana ventana;
+    char opcion;
+    int opcion_final;
 
-    if(inicializar_graficos(ESCALA_VENTANA,0)==-1) //Cerramos programa
+
+    //Mostramos el menu para elegir si es vga o cga
+    printf("Seleccione la resolucion:\n");
+    printf("0. CGA (320x200)\n");
+    printf("1. VGA (640x480)\n");
+    printf("Opcion: ");
+    do
+    {
+        scanf("%c", &opcion);
+        while (getchar() != '\n');
+        if (opcion != '0' && opcion != '1')
+        {
+            printf("Opcion invalida. Ingresar nuevamente: ");
+        }
+    }
+    while(opcion != '0' && opcion != '1');
+
+    opcion_final = opcion - '0';
+
+    if(inicializar_graficos(&ventana,1, opcion_final)== -1) //Cerramos programa
         return -1;
 
-    gbt_aplicar_paleta(paletaCGA, 16, GBT_FORMATO_888);
-    inicializar_juego(&estado);
+    if (gbt_aplicar_paleta(paletaCGA, CANT_COLORES, GBT_FORMATO_888) != 0)
+    {
+        fprintf(stderr, "Error al aplicar la nueva paleta de colores: %s\n", gbt_obtener_log());
+        return -1;
+    }
+
+
 
     tGBT_Temporizador*timer_caida;
     timer_caida=gbt_temporizador_crear(1.0);
+    if (!timer_caida)
+    {
+        fprintf(stderr, "Error al crear el temporizador para los dibujos: %s\n", gbt_obtener_log());
+        return -1;
+    }
+
+    puts("\nAbriendo el Juego! Mucha suerte!\n\nPara salir del juego presione ESC.");
+    inicializar_juego(&estado);
 
     while (estado.game_over == 0)//GAME LOOP
     {
@@ -75,26 +107,27 @@ int main()
 
         tecla_tocada=gbt_obtener_tecla_presionada();
 
+        if (gbt_tecla_presionada(GBTK_ESCAPE))
+        {
+            estado.game_over = 1;
+            printf("Saliendo del juego. Gracias por jugar! :) \n");
+        }
+
         if (tecla_tocada == GBTK_IZQUIERDA) //Verificamos si se puede mover
         {
-            puede_mover_pieza(&estado,-1,0);
-
-
+            mover_pieza(&estado,-1,0);
         }
         else if (tecla_tocada == GBTK_DERECHA)  //Verificamos si se puede mover
         {
-            puede_mover_pieza(&estado,1,0);
-
+            mover_pieza(&estado,1,0);
         }
         else if (tecla_tocada == GBTK_ARRIBA || tecla_tocada == GBTK_ESPACIO) //Rotamos la pieza
         {
             rotar_pieza_actual(&estado,1);
-
-            if(tecla_tocada == GBTK_ABAJO)
-            {
-
-            }
-
+        }
+        else if(tecla_tocada == GBTK_ABAJO)
+        {
+            mover_pieza(&estado, 0, 1);
         }
 
         // 2. Gravedad
@@ -123,20 +156,23 @@ int main()
 
         // 3.Dibujado
 
-        gbt_borrar_backbuffer(N); // Limpiar pantalla
+        gbt_borrar_backbuffer(0); // Limpiar pantalla
 
-        dibujar_pieza(&estado);
+        dibujar_tablero(&estado, &ventana);
+        dibujar_pieza(&estado, &ventana);
 
         // (Opcional) Dibujar el puntaje o la pieza siguiente aquí
 
         gbt_volcar_backbuffer();//Mandamos el nuevo dibujo al backbuffer
 
-        gbt_esperar(16);
+        gbt_esperar(16);//Es para limitar el uso de cpu
     }
 
+    gbt_temporizador_destruir(timer_caida);
+    gbt_destruir_ventana();
+    gbt_cerrar();
 
-        gbt_cerrar();
-
+    puts("Programa finalizado correctamente.\n");
 
     return 0;
 }

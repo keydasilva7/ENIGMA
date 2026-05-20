@@ -26,7 +26,7 @@ typedef struct
     int x, y;      // es la posición en el tablero, sería como coordenadas en un eje x e y pero en realidad sería x la columna e y la fila
     int forma[4][4];  // es la forma que va a tomar
 
-} Tetromino;
+}Tetromino;
 
 // Estado del juego
 typedef struct
@@ -40,10 +40,11 @@ typedef struct
     int lineas;
     int piezas_caidas;
 
+
     float velocidad_caida_ms; // milisegundos por cada caida de fila
     int game_over;
 
-} EstadoJuego;
+}EstadoJuego;
 
 extern const int COLORES_PIEZAS[7];
 
@@ -55,7 +56,6 @@ void inicializar_estructura(EstadoJuego *);
 void inicializar_juego(EstadoJuego *);
 int puede_mover_pieza(EstadoJuego *, int,int);
 void mover_pieza(EstadoJuego *,int,int);
-void dibujar_pieza(EstadoJuego *);
 void fijar_pieza(EstadoJuego *);
 void generar_nueva_pieza(EstadoJuego *);
 void borrar_lineas_completas(EstadoJuego *);

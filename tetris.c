@@ -1,4 +1,5 @@
 #include "tetris.h"
+#include <time.h>
 
 int matI[4][4]=
 {
@@ -217,6 +218,10 @@ void fijar_pieza(EstadoJuego* estado)
 
 void generar_nueva_pieza(EstadoJuego* estado)
 {
+    srand(time(NULL));
+
+    //falta mandarle la ubicacion del tablero
+
     int nueva_pieza_tipo;
 
     estado->pieza_actual = estado->pieza_siguiente;
