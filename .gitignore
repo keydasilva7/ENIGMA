@@ -1,0 +1,8 @@
+# Ejecutables
+*.exe
+*.out
+main
+
+# Archivos objeto y temporales del compilador
+*.o
+*.obj
