@@ -129,3 +129,99 @@ void dibujar_pieza(EstadoJuego *estado, ResolucionVentana *ventana)
     }
 }
 
+void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color)
+{
+    if (c < 0 || c >= 128) return;
+
+    for (int fila = 0; fila < 8; fila++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            int pixel_encendido = (font8x8_basic[(int)c][fila] >> col) & 1;
+            if (pixel_encendido)
+            {
+                gbt_dibujar_pixel(oX + col, oY + fila, color);
+            }
+        }
+    }
+}
+
+void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
+{
+    uint16_t x_actual = oX;
+
+    while (*texto)
+    {
+        dibujar_caracter(*texto, x_actual, oY, color);
+        x_actual += 8; // Avanzamos 8 píxeles a la derecha para el siguiente carácter
+        texto++;
+    }
+}
+
+void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
+{
+    char buffer[64];
+
+    // Configuración dinámica de coordenadas según el Modo Gráfico
+    int x_izquierda = ventana->es_vga ? 20 : 10;
+    int x_derecha   = ventana->es_vga ? 480 : 220;
+
+    int y_titulo    = ventana->es_vga ? 20 : 10;
+    int y_puntos    = ventana->es_vga ? 60 : 30;
+    int y_lineas    = ventana->es_vga ? 90 : 45;
+    int y_nivel     = ventana->es_vga ? 120 : 60;
+
+    // 1. Dibujar Textos de Estadísticas
+    dibujar_texto("TETRIS", x_izquierda, y_titulo, 14); // Amarillo
+
+    sprintf(buffer, "Puntos: %ld", estado->puntos);
+    dibujar_texto(buffer, x_izquierda, y_puntos, 7); // Gris claro
+
+    sprintf(buffer, "Lineas: %d", estado->lineas);
+    dibujar_texto(buffer, x_izquierda, y_lineas, 7);
+
+    // Tu estructura maneja piezas_caidas, calculamos nivel dinámicamente
+    sprintf(buffer, "Nivel: %d", (estado->piezas_caidas / 10) + 1);
+    dibujar_texto(buffer, x_izquierda, y_nivel, 7);
+
+    // 2. Dibujar Próxima Pieza (Previsualización)
+    dibujar_texto("Siguiente:", x_derecha, y_puntos, 7);
+
+    int p_offset_x = x_derecha;
+    int p_offset_y = ventana->es_vga ? y_puntos + 30 : y_puntos + 15;
+    int color = COLORES_PIEZAS[estado->pieza_siguiente.tipo];
+
+    for (int y = 0; y < 4; y++)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            if (estado->pieza_siguiente.forma[y][x])
+            {
+                // Calculamos píxeles usando los datos de tu estructura "ventana"
+                int px = p_offset_x + x * (ventana->tamano_bloque + PX_PADDING);
+                int py = p_offset_y + y * (ventana->tamano_bloque + PX_PADDING);
+
+                // Reutilizamos tu función para pintar el bloque de la pieza
+                dibujar_bloque_cuadrado(ventana, px, py, color);
+            }
+        }
+    }
+}
+
+void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana)
+{
+    // 1. Dibujamos el tablero de fondo estático para que se vea dónde perdió
+    dibujar_tablero(estado, ventana);
+
+    // 2. Calculamos los centros en base a la resolución activa de la ventana
+    int y_centro = ventana->alto / 2;
+    int x_cartel = (ventana->ancho - (19 * 8)) / 2;
+
+    int x_info   = (ventana->ancho - (33 * 8)) / 2;
+
+    // 3. Imprimimos el cartel con color Rojo brillante (12) e instrucciones en Gris claro (7)
+    dibujar_texto("===================", x_cartel, y_centro - 20, 12);
+    dibujar_texto("    GAME OVER      ", x_cartel, y_centro, 12);
+    dibujar_texto("===================", x_cartel, y_centro + 20, 12);
+    dibujar_texto("Presione Espacio / ESC para volver", x_info, y_centro + 50, 7);
+}

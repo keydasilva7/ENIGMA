@@ -18,11 +18,12 @@ typedef struct
 
 int inicializar_graficos(ResolucionVentana*,int,int);
 void dibujar_bloque_cuadrado(ResolucionVentana*, int,int,int);
-void dibujar_pieza(EstadoJuego *estado, ResolucionVentana* );
-void dibujar_tablero(EstadoJuego* estado, ResolucionVentana* );
-void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color);
-void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color);
-void dibujar_ui(EstadoJuego *estado);
+void dibujar_pieza(EstadoJuego *, ResolucionVentana* );
+void dibujar_tablero(EstadoJuego*, ResolucionVentana* );
+void dibujar_caracter(char, uint16_t, uint16_t, uint8_t);
+void dibujar_texto(const char*, uint16_t, uint16_t, uint8_t);
+void dibujar_ui(EstadoJuego *, ResolucionVentana *);
+void dibujar_interfaz_game_over(EstadoJuego*, ResolucionVentana*);
 
 
 

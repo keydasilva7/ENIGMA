@@ -62,6 +62,8 @@ void inicializar_juego(EstadoJuego* estado)
     inicializar_tablero(estado);
     inicializar_estructura(estado);
     generar_nueva_pieza(estado); // Crea la pieza que cae ahora
+    estado->pieza_actual = estado->pieza_siguiente;
+    generar_nueva_pieza(estado);
 }
 
 void inicializar_tablero(EstadoJuego* estado)
@@ -208,62 +210,58 @@ void fijar_pieza(EstadoJuego* estado)
                 fila=p->y+i;
                 columna=p->x+j; //Para saber la posicion real en el tablero
 
-                estado->tablero[fila][columna]=1; //Pintamos tablero
+                estado->tablero[fila][columna]=COLORES_PIEZAS[estado->pieza_actual.tipo]; //Pintamos tablero
             }
         }
     }
-
-
 }
 
 void generar_nueva_pieza(EstadoJuego* estado)
 {
-    srand(time(NULL));
+    estado->piezas_caidas ++;
+    estado->pieza_siguiente.tipo = rand() % 7;
+    estado->pieza_siguiente.x = 3; // Medio del tablero
+    estado->pieza_siguiente.y = 0; // Parte invisible superior
 
-    //falta mandarle la ubicacion del tablero
-
-    int nueva_pieza_tipo;
-
-    estado->pieza_actual = estado->pieza_siguiente;
-
-    // Configuramos la posición en el tablero de la pieza actual
-    estado->pieza_actual.x = 4;
-    estado->pieza_actual.y = 0;
-
-    nueva_pieza_tipo = rand()%7;
-    estado->pieza_siguiente.tipo = nueva_pieza_tipo;
-
-    switch(nueva_pieza_tipo)
+    const int (*origen)[4] = NULL;
+    switch(estado->pieza_siguiente.tipo)
     {
     case 0:
-        copiar_pieza(estado->pieza_siguiente.forma, matI);
+        origen = matI;
         break;
     case 1:
-        copiar_pieza(estado->pieza_siguiente.forma, matJ);
+        origen = matJ;
         break;
     case 2:
-        copiar_pieza(estado->pieza_siguiente.forma, matL);
+        origen = matL;
         break;
     case 3:
-        copiar_pieza(estado->pieza_siguiente.forma, matO);
+        origen = matO;
         break;
     case 4:
-        copiar_pieza(estado->pieza_siguiente.forma, matS);
+        origen = matS;
         break;
     case 5:
-        copiar_pieza(estado->pieza_siguiente.forma, matT);
+        origen = matT;
         break;
     case 6:
-        copiar_pieza(estado->pieza_siguiente.forma, matZ);
+        origen = matZ;
         break;
     }
 
+    // Copiar la forma original a la pieza nueva
+    for(int y=0; y<4; y++)
+    {
+        for(int x=0; x<4; x++)
+        {
+            estado->pieza_siguiente.forma[y][x] = origen[y][x];
+        }
+    }
 }
 
 void borrar_lineas_completas(EstadoJuego* estado)
 {
     int lineas_borradas_ahora = 0;
-
 
     for (int fila = FILAS_TOTALES - 1; fila >= 0; fila--)// Recorremos el tablero de abajo hacia arriba
     {
@@ -279,11 +277,9 @@ void borrar_lineas_completas(EstadoJuego* estado)
             }
         }
 
-
         if (fila_llena)
         {
             lineas_borradas_ahora++;
-
             // Hacer caer todas las filas que están por encima de la que borramos
             for (int fila_arriba = fila; fila_arriba > 0; fila_arriba--)
             {
@@ -300,7 +296,7 @@ void borrar_lineas_completas(EstadoJuego* estado)
                 estado->tablero[0][col] = 0;
             }
 
-            // ¡TRUCO CLAVE! Como todas las filas cayeron, la fila que acaba de ocupar este
+            //Como todas las filas cayeron, la fila que acaba de ocupar este
             // lugar también podría estar llena. Por lo tanto, incrementamos 'fila' para
             // que el 'fila--' del for nos vuelva a dejar en el mismo lugar y la reevalúe.
             fila++;
