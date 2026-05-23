@@ -3,21 +3,24 @@
 #include <string.h>
 #include <stdio.h>
 
-
+//-- Colores por tipo de pieza
 const int COLORES_PIEZAS[7] =
 {
     3,   // 0: Pieza I (Cian)
     1,   // 1: Pieza J (Azul)
-    6,   // 2: Pieza L (Naranja/Marrón)
+    6,   // 2: Pieza L (Naranja/Marron)
     14,  // 3: Pieza O (Amarillo)
     2,   // 4: Pieza S (Verde)
     5,   // 5: Pieza T (Magenta/Morado)
     4    // 6: Pieza Z (Rojo)
 };
 
+ResolucionVentana* g_ventana = NULL;
+
+//--InicializaciÃ³n
+
 int inicializar_graficos(ResolucionVentana* ventana, int escala, int es_vga)
 {
-
     if (gbt_iniciar() != 0)
     {
         fprintf(stderr, "Error al iniciar GBT: %s\n", gbt_obtener_log());
@@ -28,8 +31,9 @@ int inicializar_graficos(ResolucionVentana* ventana, int escala, int es_vga)
     ventana->alto = es_vga ? 480 : 200;
     ventana->tamano_bloque = es_vga ? 16 : 8;
     ventana->escala = escala;
+    ventana->es_vga = es_vga;
 
-    sprintf(ventana->nombreVentana, "Tetris - %dx%d", ventana->ancho, ventana->alto);
+    sprintf(ventana->nombreVentana, "Tetris - %s %dx%d (escala %d)", es_vga ? "VGA" : "CGA", ventana->ancho, ventana->alto, escala);
 
     if (gbt_crear_ventana(ventana->nombreVentana, ventana->ancho, ventana->alto, ventana->escala) != 0)
     {
@@ -37,30 +41,152 @@ int inicializar_graficos(ResolucionVentana* ventana, int escala, int es_vga)
         return -1;
     }
 
-    // Asegurarse de que el color N o 15 se interpreta como lo que deba ser
-    // (Por defecto el profesor usaba una paleta CGA que esta en main.c)
-    // El setup de la paleta se hara desde el main.c
+    g_ventana = ventana;
     return 0;
 }
 
 void dibujar_bloque_cuadrado(ResolucionVentana *ventana, int x_pantalla, int y_pantalla, int color)
 {
-    for(int i=0; i< ventana->tamano_bloque; i++)
+    for(int i = 0; i < ventana->tamano_bloque; i++)
     {
-        for(int j=0; j<ventana->tamano_bloque; j++)
+        for(int j = 0; j < ventana->tamano_bloque; j++)
         {
             gbt_dibujar_pixel(x_pantalla + j, y_pantalla + i, color);
         }
     }
 }
 
+void dibujar_rectangulo(int x, int y, int ancho, int alto, int color)
+{
+    for (int i = 0; i < ancho; i++)
+    {
+        gbt_dibujar_pixel(x + i, y, color);
+        gbt_dibujar_pixel(x + i, y + alto - 1, color);
+    }
+    // Bordes verticales
+    for (int j = 0; j < alto; j++)
+    {
+        gbt_dibujar_pixel(x, y + j, color);
+        gbt_dibujar_pixel(x + ancho - 1, y + j, color);
+    }
+}
+
+void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color)
+{
+    if (c < 0 || c >= 128) return;
+
+    for (int fila = 0; fila < 8; fila++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            int pixel_encendido = (font8x8_basic[(int)c][fila] >> col) & 1;
+            if (pixel_encendido)
+            {
+                gbt_dibujar_pixel(oX + col, oY + fila, color);
+            }
+        }
+    }
+}
+
+void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
+{
+    uint16_t x_actual = oX;
+
+    while (*texto)
+    {
+        dibujar_caracter(*texto, x_actual, oY, color);
+        x_actual += 8; // Avanzamos 8 pixeles a la derecha para el siguiente caracter
+        texto++;
+    }
+}
+
+//--Menu con selector visual
+void dibujar_menu(int opcion_seleccionada)
+{
+    if (!g_ventana) return;
+
+    int cx = g_ventana->ancho / 2;   // centro horizontal
+    int ancho_boton = g_ventana->es_vga ? 160 : 100;
+    int alto_boton  = g_ventana->es_vga ?  28  :  16;
+    int separacion  = g_ventana->es_vga ?  12  :   6;
+    int x_boton     = cx - ancho_boton / 2;
+    int y_inicio    = g_ventana->es_vga ? 160 :  70;
+
+    // TÃ­tulo
+    const char* titulo = "=== TETRIS ===";
+    int x_titulo = cx - (int)(strlen(titulo) * 8) / 2;
+    dibujar_texto(titulo, x_titulo, g_ventana->es_vga ? 60 : 20, 14);
+
+    const char* etiquetas[3] = {"  JUGAR  ", " AJUSTES ", "  SALIR  "};
+    // Colores: seleccionado=amarillo/blanco, normal=gris/gris oscuro
+    int color_borde_sel = 14; // Amarillo
+    int color_texto_sel = 15; // Blanco
+    int color_borde_nor =  7; // Gris claro
+    int color_texto_nor =  8; // Gris oscuro
+
+    for (int i = 0; i < 3; i++)
+    {
+        int y_boton = y_inicio + i * (alto_boton + separacion);
+
+        int cb = (i == opcion_seleccionada) ? color_borde_sel : color_borde_nor;
+        int ct = (i == opcion_seleccionada) ? color_texto_sel : color_texto_nor;
+
+        // Borde doble para el seleccionado
+        dibujar_rectangulo(x_boton, y_boton, ancho_boton, alto_boton, cb);
+        if (i == opcion_seleccionada)
+            dibujar_rectangulo(x_boton - 1, y_boton - 1, ancho_boton + 2, alto_boton + 2, cb);
+
+        dibujar_rectangulo(x_boton, y_boton, ancho_boton, alto_boton, cb);
+        // Texto centrado dentro del boton
+        int x_texto = x_boton + (ancho_boton - (int)(strlen(etiquetas[i]) * 8)) / 2;
+        int y_texto = y_boton + (alto_boton - 8) / 2;
+        dibujar_texto(etiquetas[i], x_texto, y_texto, ct);
+
+        // Flecha indicadora
+        if (i == opcion_seleccionada)
+            dibujar_texto(">", x_boton - 12, y_texto, 14);
+    }
+
+    // Instrucciones al pie
+    const char* ayuda = "Flechas + Enter   o   1/2/3";
+    int x_ayuda = cx - (int)(strlen(ayuda) * 8) / 2;
+    dibujar_texto(ayuda, x_ayuda, g_ventana->es_vga ? 380 : 170, 8);
+}
+
+//--Pantalla en Pausa
+void dibujar_pantalla_pausa(ResolucionVentana* ventana)
+{
+    int cx = ventana->ancho / 2;
+    int cy = ventana->alto  / 2;
+    int sep = ventana->es_vga ? 14 : 10;
+
+    const char* lineas[] =
+    {
+        "==================",
+        "     EN PAUSA     ",
+        "==================",
+        " Enter/P: Continuar",
+        "  ESC:    Menu    "
+    };
+    int n = 5;
+    int y_base = cy - (n * sep) / 2;
+
+    for (int i = 0; i < n; i++)
+    {
+        int x = cx - (int)(strlen(lineas[i]) * 8) / 2;
+        int color = (i == 1) ? 11 : (i >= 3 ? 7 : 11);
+        dibujar_texto(lineas[i], x, y_base + i * sep, color);
+    }
+}
+
+//--Tablero
+
 void dibujar_tablero(EstadoJuego *estado, ResolucionVentana *ventana)
 {
-
     int ancho_tablero = COLUMNAS * (ventana->tamano_bloque + PX_PADDING);
     int alto_tablero = FILAS_VISIBLES * (ventana->tamano_bloque + PX_PADDING);
 
-    // Centrado basado en la resolución activa
+    // Centrado basado en la resolucion activa
     int offset_x = (ventana->ancho - ancho_tablero) / 2;
     int offset_y = (ventana->alto - alto_tablero) / 2;
 
@@ -70,10 +196,10 @@ void dibujar_tablero(EstadoJuego *estado, ResolucionVentana *ventana)
     // Recorremos verticalmente todo el alto del tablero visible
     for (int y = 0; y < alto_tablero; y++)
     {
-        // Pared Izquierda: Un píxel a la izquierda del offset de inicio
+        // Pared Izquierda: Un pixel a la izquierda del offset de inicio
         gbt_dibujar_pixel(offset_x - 1, offset_y + y, color_borde);
 
-        // Pared Derecha: Un píxel a la derecha del ancho total del tablero
+        // Pared Derecha: Un pixel a la derecha del ancho total del tablero
         gbt_dibujar_pixel(offset_x + ancho_tablero, offset_y + y, color_borde);
     }
 
@@ -99,6 +225,8 @@ void dibujar_tablero(EstadoJuego *estado, ResolucionVentana *ventana)
         }
     }
 }
+
+//--Pieza activa
 
 void dibujar_pieza(EstadoJuego *estado, ResolucionVentana *ventana)
 {
@@ -129,49 +257,23 @@ void dibujar_pieza(EstadoJuego *estado, ResolucionVentana *ventana)
     }
 }
 
-void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color)
-{
-    if (c < 0 || c >= 128) return;
-
-    for (int fila = 0; fila < 8; fila++)
-    {
-        for (int col = 0; col < 8; col++)
-        {
-            int pixel_encendido = (font8x8_basic[(int)c][fila] >> col) & 1;
-            if (pixel_encendido)
-            {
-                gbt_dibujar_pixel(oX + col, oY + fila, color);
-            }
-        }
-    }
-}
-
-void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
-{
-    uint16_t x_actual = oX;
-
-    while (*texto)
-    {
-        dibujar_caracter(*texto, x_actual, oY, color);
-        x_actual += 8; // Avanzamos 8 píxeles a la derecha para el siguiente carácter
-        texto++;
-    }
-}
+//-- UI (Estadisticas + siguiente pieza + velocidad)
 
 void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
 {
     char buffer[64];
 
-    // Configuración dinámica de coordenadas según el Modo Gráfico
-    int x_izquierda = ventana->es_vga ? 20 : 10;
-    int x_derecha   = ventana->es_vga ? 480 : 220;
+    // Configuracion dinamica de coordenadas segun el Modo Grafico
+    int x_izquierda = ventana->es_vga ? 20 : 5;
+    int x_derecha   = ventana->es_vga ? 490 : 228;
 
-    int y_titulo    = ventana->es_vga ? 20 : 10;
-    int y_puntos    = ventana->es_vga ? 60 : 30;
-    int y_lineas    = ventana->es_vga ? 90 : 45;
-    int y_nivel     = ventana->es_vga ? 120 : 60;
+    int y_titulo    = ventana->es_vga ? 20 : 5;
+    int y_puntos    = ventana->es_vga ? 60 : 25;
+    int y_lineas    = ventana->es_vga ? 90 : 38;
+    int y_nivel     = ventana->es_vga ? 120 : 51;
+    int y_vel       = ventana->es_vga ? 150 : 64;
 
-    // 1. Dibujar Textos de Estadísticas
+    // 1. Dibujamos Textos de Estadisticas
     dibujar_texto("TETRIS", x_izquierda, y_titulo, 14); // Amarillo
 
     sprintf(buffer, "Puntos: %ld", estado->puntos);
@@ -180,11 +282,15 @@ void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
     sprintf(buffer, "Lineas: %d", estado->lineas);
     dibujar_texto(buffer, x_izquierda, y_lineas, 7);
 
-    // Tu estructura maneja piezas_caidas, calculamos nivel dinámicamente
+    // Calculamos nivel dinamicamente
     sprintf(buffer, "Nivel: %d", (estado->piezas_caidas / 10) + 1);
     dibujar_texto(buffer, x_izquierda, y_nivel, 7);
 
-    // 2. Dibujar Próxima Pieza (Previsualización)
+    // Velocidad actual expresada en ms
+    sprintf(buffer, "Vel:%dms", (int)estado->velocidad_caida_ms);
+    dibujar_texto(buffer, x_izquierda, y_vel, 11);
+
+    // 2. Dibujar Proxima Pieza (Previsualizacion)
     dibujar_texto("Siguiente:", x_derecha, y_puntos, 7);
 
     int p_offset_x = x_derecha;
@@ -197,31 +303,115 @@ void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
         {
             if (estado->pieza_siguiente.forma[y][x])
             {
-                // Calculamos píxeles usando los datos de tu estructura "ventana"
+                // Calculamos pixeles usando los datos de estructura "ventana"
                 int px = p_offset_x + x * (ventana->tamano_bloque + PX_PADDING);
                 int py = p_offset_y + y * (ventana->tamano_bloque + PX_PADDING);
 
-                // Reutilizamos tu función para pintar el bloque de la pieza
+                // Reutilizamos funcion para pintar el bloque de la pieza
                 dibujar_bloque_cuadrado(ventana, px, py, color);
             }
         }
     }
+
+    // Controles al pie (lado izquierdo)
+    int y_ctrl = ventana->es_vga ? 380 : 80;
+    dibujar_texto("Z: rotar izq.", x_izquierda, y_ctrl,      8);
+    dibujar_texto("^: rotar der.", x_izquierda, y_ctrl + 14, 8);
+    dibujar_texto("P/Esc: Pausa",      x_izquierda, y_ctrl + 28, 8);
 }
 
-void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana)
+//--Game Over
+
+void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana, Jugador* jug)
 {
-    // 1. Dibujamos el tablero de fondo estático para que se vea dónde perdió
     dibujar_tablero(estado, ventana);
 
-    // 2. Calculamos los centros en base a la resolución activa de la ventana
-    int y_centro = ventana->alto / 2;
-    int x_cartel = (ventana->ancho - (19 * 8)) / 2;
+    int cx       = ventana->ancho / 2;
+    int cy       = ventana->alto  / 2;
+    int sep      = 14;
 
-    int x_info   = (ventana->ancho - (33 * 8)) / 2;
+    char buf_pts[32], buf_lin[32], buf_niv[32], buf_mejor[32];
+    sprintf(buf_pts, "Puntos: %ld", estado->puntos);
+    sprintf(buf_lin, "Lineas: %d",  estado->lineas);
+    sprintf(buf_niv, "Nivel:  %d",  (estado->piezas_caidas / 10) + 1);
+    sprintf(buf_mejor, "Record: %ld", jug->mejor_puntaje);
 
-    // 3. Imprimimos el cartel con color Rojo brillante (12) e instrucciones en Gris claro (7)
-    dibujar_texto("===================", x_cartel, y_centro - 20, 12);
-    dibujar_texto("    GAME OVER      ", x_cartel, y_centro, 12);
-    dibujar_texto("===================", x_cartel, y_centro + 20, 12);
-    dibujar_texto("Presione Espacio / ESC para volver", x_info, y_centro + 50, 7);
+    const char* lineas[] =
+    {
+        "===================",
+        "    GAME  OVER     ",
+        "===================",
+        buf_pts,
+        buf_lin,
+        buf_niv,
+        buf_mejor,
+        " Enter/Esp: Menu  "
+    };
+    int n = 7;
+
+    int y_base = cy - (n * sep) / 2;
+    for (int i = 0; i < n; i++)
+    {
+        int color = (i == 1) ? 12 : (i == 0 || i == 2) ? 12 : 7;
+        if (i == n - 1) color = 11;
+        int x = cx - (int)(strlen(lineas[i]) * 8) / 2;
+        dibujar_texto(lineas[i], x, y_base + i * sep, color);
+    }
+}
+
+// Jugador
+int actualizar_ingreso_nombre(eGBT_Tecla tecla, Jugador* jug, ResolucionVentana* ventana)
+{
+    int cx = ventana->ancho / 2;
+    int cy = ventana->alto  / 2;
+
+    // Formulario
+    dibujar_texto("=== TETRIS ===", cx - 7*8, cy - 50, 14);
+    dibujar_texto("Ingresa tu nombre:", cx - 9*8, cy - 20, 7);
+
+    char display[36];
+    snprintf(display, sizeof(display), "[ %-16s]", jug->nombre);
+    dibujar_texto(display, cx - 9*8, cy, 15);
+
+    dibujar_texto("Enter: Confirmar", cx - 8*8, cy + 20, 8);
+    dibujar_texto("Backspace: Borrar", cx - 8*8, cy + 32, 8);
+
+    int len = strlen(jug->nombre);
+
+    // Mapeamos cada tecla a su caracter
+    struct
+    {
+        eGBT_Tecla t;
+        char c;
+    } mapa[] =
+    {
+        {GBTK_a,'A'},{GBTK_b,'B'},{GBTK_c,'C'},{GBTK_d,'D'},{GBTK_e,'E'},
+        {GBTK_f,'F'},{GBTK_g,'G'},{GBTK_h,'H'},{GBTK_i,'I'},{GBTK_j,'J'},
+        {GBTK_k,'K'},{GBTK_l,'L'},{GBTK_m,'M'},{GBTK_n,'N'},{GBTK_o,'O'},
+        {GBTK_p,'P'},{GBTK_q,'Q'},{GBTK_r,'R'},{GBTK_s,'S'},{GBTK_t,'T'},
+        {GBTK_u,'U'},{GBTK_v,'V'},{GBTK_w,'W'},{GBTK_x,'X'},{GBTK_y,'Y'},
+        {GBTK_z,'Z'},
+        {GBTK_0,'0'},{GBTK_1,'1'},{GBTK_2,'2'},{GBTK_3,'3'},{GBTK_4,'4'},
+        {GBTK_5,'5'},{GBTK_6,'6'},{GBTK_7,'7'},{GBTK_8,'8'},{GBTK_9,'9'},
+        {GBTK_ESPACIO,'_'}
+    };
+    int n_mapa = sizeof(mapa) / sizeof(mapa[0]);
+
+    for (int i = 0; i < n_mapa; i++)
+    {
+        if (gbt_tecla_presionada(mapa[i].t) && len < 16)
+        {
+            jug->nombre[len]     = mapa[i].c;
+            jug->nombre[len + 1] = '\0';
+            break;
+        }
+    }
+
+    if (gbt_tecla_presionada(GBTK_RETROCESO) && len > 0)
+        jug->nombre[len - 1] = '\0';
+
+    if (gbt_tecla_presionada(GBTK_ENTER) && len > 0)
+        return 1;
+
+    return 0;
 }
