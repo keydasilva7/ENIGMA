@@ -1,5 +1,6 @@
 #ifndef TETRIS_H_INCLUDED
 #define TETRIS_H_INCLUDED
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "GBT/gbt.h"
@@ -17,13 +18,17 @@
 #define FILAS_TOTALES 24
 #define COLUMNAS 10
 
+#define VELOCIDAD_INICIAL_MS 1000.0f // Velocidad inicial en ms
+#define FACTOR_VELOCIDAD 0.97f // Factor de reuccion cada 10 piezas (3%)
+
+#define ARCHIVO_JUGADOR "jugador.dat"
 
 //Nuestra estructura de pieza (I, J, L, O, S, T, Z)
 //Permite mover copiar o colisionar
 typedef struct
 {
-    int tipo;      // qué pieza es? I=0, J=1, L=2, O=3, S=4, T=5, Z=6
-    int x, y;      // es la posición en el tablero, sería como coordenadas en un eje x e y pero en realidad sería x la columna e y la fila
+    int tipo;      // que pieza es? I=0, J=1, L=2, O=3, S=4, T=5, Z=6
+    int x, y;      // es la posicion en el tablero, sería como coordenadas en un eje x e y pero en realidad seria x la columna e y la fila
     int forma[4][4];  // es la forma que va a tomar
 
 }Tetromino;
@@ -43,22 +48,46 @@ typedef struct
 
     float velocidad_caida_ms; // milisegundos por cada caida de fila
     int game_over;
+    char nombre_jugador[32];
+    long mejor_puntaje;
 
 }EstadoJuego;
 
+typedef struct {
+    char nombre[32];
+    int  es_vga;
+    int  escala;
+    long mejor_puntaje;
+} Jugador;
+
 extern const int COLORES_PIEZAS[7];
 
-int rotar_pieza_actual(EstadoJuego *, int);
-int colision(EstadoJuego *,Tetromino *);
-void rotar_matriz(int [][4], int [][4], int );
-void inicializar_tablero(EstadoJuego *);
-void inicializar_estructura(EstadoJuego *);
-void inicializar_juego(EstadoJuego *);
-int puede_mover_pieza(EstadoJuego *, int,int);
-void mover_pieza(EstadoJuego *,int,int);
-void fijar_pieza(EstadoJuego *);
-void generar_nueva_pieza(EstadoJuego *);
-void borrar_lineas_completas(EstadoJuego *);
+
+// Inicializacion
+void inicializar_tablero(EstadoJuego*);
+void inicializar_estructura(EstadoJuego*);
+void inicializar_juego(EstadoJuego*);
+
+// Movimiento y colision
+int puede_mover_pieza(EstadoJuego*, int, int);
+void mover_pieza(EstadoJuego*, int, int);
+int colision(EstadoJuego*, Tetromino*);
+
+// Rotacion
+void rotar_matriz(int [][4], int [][4], int);
+int rotar_pieza_actual(EstadoJuego*, int);
+
+// Funciones de juego
+void fijar_pieza(EstadoJuego*);
+void generar_nueva_pieza(EstadoJuego*);
+void borrar_lineas_completas(EstadoJuego*);
+
+// Dificultad
+void recalcular_velocidad(EstadoJuego*);
+
+// Jugador
+void guardar_jugador(const Jugador*);
+int cargar_jugador(Jugador*);
 
 
 
