@@ -1,5 +1,8 @@
 #include "tetris.h"
 #include <time.h>
+#include <math.h>
+
+//--Formas de los 7 tetrominos
 
 int matI[4][4]=
 {
@@ -57,6 +60,8 @@ int matZ[4][4]=
     {0,0,0,0}
 };
 
+//--Inicializacion
+
 void inicializar_juego(EstadoJuego* estado)
 {
     inicializar_tablero(estado);
@@ -87,43 +92,23 @@ void inicializar_estructura(EstadoJuego* estado)
     estado->game_over = 0;
 }
 
-void copiar_pieza(int mat_forma[4][4], int mat_letra[4][4])
+//--Dificultad
+
+//Recalculamos velocidad de caida aplicando 0.97 tantas veces como niveles de 10 piezas hayan sido alcanzados
+void recalcular_velocidad(EstadoJuego* estado)
 {
-    int i, j;
-    for (i = 0; i < 4; i++)
+    int niveles = estado->piezas_caidas / 10;
+    float v = VELOCIDAD_INICIAL_MS;
+    for(int i = 0; i < niveles; i++)
     {
-        for (j = 0; j < 4; j++)
-        {
-            mat_forma[i][j] = mat_letra[i][j];
-        }
+        v *= FACTOR_VELOCIDAD;
     }
+    if(v < 100.0f) v = 100.0f;
+    estado->velocidad_caida_ms = v;
+
 }
 
-int rotar_pieza_actual(EstadoJuego* estado, int direccion)
-{
-    Tetromino aux = estado->pieza_actual; // Hacemos una copia para probar
-
-    int nueva_forma[4][4];
-
-    rotar_matriz(aux.forma, nueva_forma, direccion > 0);
-
-    // Asignar nueva forma a la copia
-    for(int y=0; y<4; y++)
-    {
-        for(int x=0; x<4; x++)
-        {
-            aux.forma[y][x] = nueva_forma[y][x];
-        }
-    }
-
-    if (!colision(estado, &aux))
-    {
-        estado->pieza_actual = aux;
-        return 1;
-    }
-    return 0;
-}
-
+//--Colision
 int colision(EstadoJuego *estado, Tetromino *pieza)
 {
     for (int y = 0; y < 4; y++)
@@ -152,23 +137,6 @@ int colision(EstadoJuego *estado, Tetromino *pieza)
     return 0; // No hay colision
 }
 
-void rotar_matriz(int origen[][4], int destino[][4], int a_la_derecha)
-{
-    for(int i = 0; i < 4; i++)
-    {
-        for(int j = 0; j < 4; j++)
-        {
-            if (a_la_derecha)
-            {
-                destino[j][3 - i] = origen[i][j];
-            }
-            else
-            {
-                destino[3 - j][i] = origen[i][j];
-            }
-        }
-    }
-}
 
 int puede_mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
 {
@@ -195,26 +163,67 @@ void mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
     }
 }
 
-void fijar_pieza(EstadoJuego* estado)
+//--Rotacion
+
+void rotar_matriz(int origen[][4], int destino[][4], int a_la_derecha)
 {
-    Tetromino *p=&estado->pieza_actual;
-
-    int fila, columna;
-
-    for(int i=0; i<4; i++)
+    for(int i = 0; i < 4; i++)
     {
-        for(int j=0; j<4 ; j++)
+        for(int j = 0; j < 4; j++)
         {
-            if(p->forma[i][j])
+            if (a_la_derecha)
             {
-                fila=p->y+i;
-                columna=p->x+j; //Para saber la posicion real en el tablero
-
-                estado->tablero[fila][columna]=COLORES_PIEZAS[estado->pieza_actual.tipo]; //Pintamos tablero
+                destino[j][3 - i] = origen[i][j];
+            }
+            else
+            {
+                destino[3 - j][i] = origen[i][j];
             }
         }
     }
 }
+
+//Si rota y colisiona, probamos desplazarla 1 o 2 posiciones a izq/der antes de rechazar la rotacion
+//Termino denominado: wall kick
+int rotar_pieza_actual(EstadoJuego* estado, int direccion)
+{
+    Tetromino aux = estado->pieza_actual; // Hacemos una copia para probar
+
+    int nueva_forma[4][4];
+
+    rotar_matriz(aux.forma, nueva_forma, direccion > 0);
+
+    // Asignamos nueva forma a la copia
+    for(int y = 0; y < 4; y++)
+    {
+        for(int x = 0; x < 4; x++)
+        {
+            aux.forma[y][x] = nueva_forma[y][x];
+        }
+    }
+
+    if (!colision(estado, &aux))
+    {
+        estado->pieza_actual = aux;
+        return 1;
+    }
+
+    int kicks[] = {1, -1, 2, -2};
+    for (int k = 0; k < 4; k++)
+    {
+        aux.x = estado->pieza_actual.x + kicks[k];
+        if (!colision(estado, &aux))
+        {
+            estado->pieza_actual = aux;
+            return 1;
+        }
+    }
+
+
+    return 0;//rotación imposible
+}
+
+//--Generar pieza
 
 void generar_nueva_pieza(EstadoJuego* estado)
 {
@@ -249,16 +258,38 @@ void generar_nueva_pieza(EstadoJuego* estado)
         break;
     }
 
-    // Copiar la forma original a la pieza nueva
-    for(int y=0; y<4; y++)
+    // Copiamos la forma original a la pieza nueva
+    for(int y = 0; y < 4; y++)
     {
-        for(int x=0; x<4; x++)
+        for(int x = 0; x < 4; x++)
         {
             estado->pieza_siguiente.forma[y][x] = origen[y][x];
         }
     }
 }
 
+//--Fijar pieza
+
+void fijar_pieza(EstadoJuego* estado)
+{
+    Tetromino* p = &estado->pieza_actual;
+
+    for(int i = 0; i < 4; i++)
+    {
+        for(int j = 0; j < 4 ; j++)
+        {
+            if(p->forma[i][j])
+            {
+                int fila = p->y+i;
+                int columna = p->x+j; //Para saber la posicion real en el tablero
+
+                estado->tablero[fila][columna] = COLORES_PIEZAS[estado->pieza_actual.tipo]; //Pintamos tablero
+            }
+        }
+    }
+}
+
+//--Borrar lineas
 void borrar_lineas_completas(EstadoJuego* estado)
 {
     int lineas_borradas_ahora = 0;
@@ -270,7 +301,7 @@ void borrar_lineas_completas(EstadoJuego* estado)
         int fila_llena = 1;
         for (int col = 0; col < COLUMNAS; col++)
         {
-            if (estado->tablero[fila][col] == 0) // Encontramos un espacio vacío
+            if (estado->tablero[fila][col] == 0) // Encontramos un espacio vacio
             {
                 fila_llena = 0;
                 break;          // Dejamos de revisar esta fila
@@ -290,30 +321,57 @@ void borrar_lineas_completas(EstadoJuego* estado)
                 }
             }
 
-            // La fila superior (índice 0) ya no tiene a nadie arriba, se vacía (se llena de ceros)
+            // La fila superior (indice 0) ya no tiene a nadie arriba, se vacia (se llena de ceros)
             for (int col = 0; col < COLUMNAS; col++)
             {
                 estado->tablero[0][col] = 0;
             }
 
             //Como todas las filas cayeron, la fila que acaba de ocupar este
-            // lugar también podría estar llena. Por lo tanto, incrementamos 'fila' para
-            // que el 'fila--' del for nos vuelva a dejar en el mismo lugar y la reevalúe.
+            // lugar también podria estar llena. Por lo tanto, incrementamos 'fila' para
+            // que el 'fila--' del for nos vuelva a dejar en el mismo lugar y la reevalue.
             fila++;
         }
     }
 
-    // 3. Si borramos al menos una línea, actualizamos las estadísticas del jugador
+    // 3. Si borramos al menos una linea, actualizamos las estadisticas del jugador
     if (lineas_borradas_ahora > 0)
     {
         estado->lineas += lineas_borradas_ahora;
 
-        // Sistema de puntos clásico (mientras más líneas rompes juntas, más puntos ganas)
-        if (lineas_borradas_ahora == 1) estado->puntos += 100;
-        else if (lineas_borradas_ahora == 2) estado->puntos += 300;
-        else if (lineas_borradas_ahora == 3) estado->puntos += 500;
-        else if (lineas_borradas_ahora == 4) estado->puntos += 800; // ¡TETRIS!
+        // Sistema de puntos clasico (mientras mas líneas rompes juntas, mas puntos ganas)
+        // A mayor velocidad (ms más bajo) más puntos
+        float multiplicador = VELOCIDAD_INICIAL_MS / estado->velocidad_caida_ms;
+        long base = 0;
+        if (lineas_borradas_ahora == 1) base = 100;
+        else if (lineas_borradas_ahora == 2) base = 300;
+        else if (lineas_borradas_ahora == 3) base = 500;
+        else if (lineas_borradas_ahora == 4) base = 800; // TETRIS!!!!!!
+
+        estado->puntos += (long)(base * multiplicador);
     }
 }
+
+//Jugador
+
+void guardar_jugador(const Jugador* p)
+{
+    FILE* f = fopen(ARCHIVO_JUGADOR, "wb");
+    if (!f) return;
+    fwrite(p, sizeof(Jugador), 1, f);
+    fclose(f);
+}
+
+int cargar_jugador(Jugador* p)
+{
+    FILE* f = fopen(ARCHIVO_JUGADOR, "rb");
+    if (!f) return 0;
+    fread(p, sizeof(Jugador), 1, f);
+    fclose(f);
+    return 1;
+}
+
+
+
 
 
