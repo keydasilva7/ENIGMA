@@ -32,6 +32,7 @@ typedef enum
     ESTADO_MENU,
     ESTADO_INGRESO_NOMBRE,
     ESTADO_AJUSTES,
+    ESTADO_ESTADISTICAS,
     ESTADO_JUGANDO,
     ESTADO_PAUSADO,
     ESTADO_GAMEOVER
@@ -39,10 +40,11 @@ typedef enum
 
 // Prototipos modificados (ahora actualizar_ajustes recibe un puntero a entero)
 void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corriendo, EstadoJuego* estado_juego, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion, int* opcion_menu, Jugador* jug);
-void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, int* sub_menu, Jugador* jug);
+void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, int* sub_menu, Jugador* jug, TablaPuntajes* tabla);
 void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion);
 void actualizar_pausado(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana);
-void actualizar_gameover(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, Jugador* jug);
+void actualizar_gameover(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, Jugador* jug, TablaPuntajes* tabla);
+void actualizar_estadisticas(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, TablaPuntajes* tabla);
 int reiniciar_entorno_grafico(ResolucionVentana* ventana);
 void actualizar_velocidad(EstadoJuego* estado_juego, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion);
 
@@ -60,13 +62,41 @@ int main(int argc, char* argv[])
     ventana.es_vga = 0;
     ventana.escala = 2;
     Jugador jug;
+    TablaPuntajes tabla;
+    tabla.cantidad = 0;
 
     memset(&jug, 0, sizeof(jug));
-    if(cargar_jugador(&jug))
+    if(cargar_puntajes(&tabla) && tabla.cantidad > 0)
     {
-        ventana.es_vga = jug.es_vga;
-        ventana.escala = jug.escala;
-        jug.nombre[0] = '\0';
+        ventana.es_vga = tabla.jugadores[0].es_vga;
+        ventana.escala = tabla.jugadores[0].escala;
+        jug.es_vga = tabla.jugadores[0].es_vga;
+        jug.escala = tabla.jugadores[0].escala;
+    }
+
+    // Procesar argumentos de linea de comandos (sobreescriben los ajustes guardados)
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-vga") == 0)
+        {
+            ventana.es_vga = 1;
+            jug.es_vga = 1;
+        }
+        else if (strcmp(argv[i], "-cga") == 0)
+        {
+            ventana.es_vga = 0;
+            jug.es_vga = 0;
+        }
+        else if (strcmp(argv[i], "-escala") == 0 && i + 1 < argc)
+        {
+            int esc = atoi(argv[i + 1]);
+            if (esc > 0)
+            {
+                ventana.escala = esc;
+                jug.escala = esc;
+            }
+            i++; // saltar el numero
+        }
     }
 
     if (inicializar_graficos(&ventana, ventana.escala, ventana.es_vga) == -1)
@@ -98,7 +128,10 @@ int main(int argc, char* argv[])
             break;
         case ESTADO_AJUSTES:
             // Pasamos la variable por referencia para que la funcion pueda leerla y modificarla
-            actualizar_ajustes(&estado_app, tecla, &ventana, &sub_menu_ajustes, &jug);
+            actualizar_ajustes(&estado_app, tecla, &ventana, &sub_menu_ajustes, &jug, &tabla);
+            break;
+        case ESTADO_ESTADISTICAS:
+            actualizar_estadisticas(&estado_app, tecla, &ventana, &tabla);
             break;
         case ESTADO_JUGANDO:
             actualizar_jugando(&estado_app, tecla, &estado_juego, &ventana, &timer_caida, &timer_fijacion);
@@ -107,12 +140,19 @@ int main(int argc, char* argv[])
             actualizar_pausado(&estado_app, tecla, &ventana);
             break;
         case ESTADO_GAMEOVER:
-            actualizar_gameover(&estado_app, tecla, &estado_juego, &ventana, &jug);
+            actualizar_gameover(&estado_app, tecla, &estado_juego, &ventana, &jug, &tabla);
             break;
         case ESTADO_INGRESO_NOMBRE:
             if (actualizar_ingreso_nombre(tecla, &jug, &ventana))
             {
                 // Jugador confirmo nombre -> inicia juego
+                jug.mejor_puntaje = 0;
+                for(int i = 0; i < tabla.cantidad; i++) {
+                    if(strcmp(tabla.jugadores[i].nombre, jug.nombre) == 0) {
+                        jug.mejor_puntaje = tabla.jugadores[i].mejor_puntaje;
+                        break;
+                    }
+                }
                 strncpy(estado_juego.nombre_jugador, jug.nombre, 31);
                 inicializar_juego(&estado_juego);
                 if (timer_caida) gbt_temporizador_destruir(timer_caida);
@@ -168,19 +208,20 @@ void actualizar_velocidad(EstadoJuego* ej, tGBT_Temporizador** tc, tGBT_Temporiz
 void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corriendo,EstadoJuego* estado_juego, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion, int* opcion_menu, Jugador* jug)
 {
     // Mover selector con flechas
-    if (tecla == GBTK_ARRIBA) *opcion_menu = (*opcion_menu + 2) % 3;
-    if (tecla == GBTK_ABAJO)  *opcion_menu = (*opcion_menu + 1) % 3;
+    if (tecla == GBTK_ARRIBA) *opcion_menu = (*opcion_menu + 3) % 4;
+    if (tecla == GBTK_ABAJO)  *opcion_menu = (*opcion_menu + 1) % 4;
 
     // Atajos numericos
     if (tecla == GBTK_1) *opcion_menu = 0;
     if (tecla == GBTK_2) *opcion_menu = 1;
     if (tecla == GBTK_3) *opcion_menu = 2;
+    if (tecla == GBTK_4) *opcion_menu = 3;
 
     dibujar_menu(*opcion_menu);
 
     // Confirmar
     int confirmar = (tecla == GBTK_ENTER || tecla == GBTK_ESPACIO ||
-                     tecla == GBTK_1 || tecla == GBTK_2 || tecla == GBTK_3);
+                     tecla == GBTK_1 || tecla == GBTK_2 || tecla == GBTK_3 || tecla == GBTK_4);
 
     if (confirmar)
     {
@@ -195,6 +236,11 @@ void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corrie
             // AJUSTES
             *estado_app = ESTADO_AJUSTES;
         }
+        else if (*opcion_menu == 2)
+        {
+            // ESTADISTICAS
+            *estado_app = ESTADO_ESTADISTICAS;
+        }
         else
         {
             // SALIR
@@ -207,7 +253,7 @@ void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corrie
 
 //--Ajustes
 
-void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, int* sub_menu, Jugador* jug)
+void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, int* sub_menu, Jugador* jug, TablaPuntajes* tabla)
 {
     char buffer_texto[64];
 
@@ -239,7 +285,7 @@ void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
             ventana->es_vga = 0;
             reiniciar_entorno_grafico(ventana);
             jug->es_vga = 0;
-            guardar_jugador(jug);
+            if(tabla->cantidad > 0) { tabla->jugadores[0].es_vga = 0; guardar_puntajes(tabla); }
             *sub_menu = 0;
         }
         else if (tecla == GBTK_1)
@@ -247,7 +293,7 @@ void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
             ventana->es_vga = 1;
             reiniciar_entorno_grafico(ventana);
             jug->es_vga = 1;
-            guardar_jugador(jug);
+            if(tabla->cantidad > 0) { tabla->jugadores[0].es_vga = 1; guardar_puntajes(tabla); }
             *sub_menu = 0;
         }
         else if (tecla == GBTK_ESCAPE)
@@ -274,7 +320,7 @@ void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
             ventana->escala = nueva_escala;
             reiniciar_entorno_grafico(ventana);
             jug->escala = nueva_escala;
-            guardar_jugador(jug);
+            if(tabla->cantidad > 0) { tabla->jugadores[0].escala = nueva_escala; guardar_puntajes(tabla); }
             *sub_menu = 0;
         }
     }
@@ -312,6 +358,13 @@ void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJu
 
             //A mayor velocidad, la pieza cae mas rapido sola, mayor puntos por jugador
             estado_juego->puntos += (long)(1000.0f / estado_juego -> velocidad_caida_ms);
+            
+            // Si al bajar chocamos con el suelo, iniciamos el timer de fijación inmediatamente
+            if(!puede_mover_pieza(estado_juego, 0, 1) && *timer_fijacion == NULL)
+            {
+                // Fijacion ultra rapida si el jugador forzo la caida al fondo
+                *timer_fijacion = gbt_temporizador_crear(0.001);
+            }
         }
     }
 
@@ -346,6 +399,7 @@ void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJu
         if(!puede_mover_pieza(estado_juego, 0, 1))
         {
             int piezas_antes = estado_juego->piezas_caidas;
+            estado_juego->piezas_caidas++; // Sumamos la pieza que acaba de caer al contador
 
             fijar_pieza(estado_juego);
             borrar_lineas_completas(estado_juego);
@@ -397,20 +451,36 @@ void actualizar_pausado(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
 
 //--Game Over
 
-void actualizar_gameover(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, Jugador* jug)
+void actualizar_gameover(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, Jugador* jug, TablaPuntajes* tabla)
 {
     dibujar_interfaz_game_over(estado_juego, ventana, jug);
 
-    // Actualiza mejor pntaje en caso de corresponder
-    if (estado_juego->puntos > jug->mejor_puntaje)
-    {
-        jug->mejor_puntaje = estado_juego->puntos;
-        jug->es_vga  = ventana->es_vga;
-        jug->escala  = ventana->escala;
-        guardar_jugador(jug);
-    }
-
     if (tecla == GBTK_ESPACIO || tecla == GBTK_ESCAPE || tecla == GBTK_ENTER)
+    {
+        // Actualiza mejor puntaje en caso de corresponder
+        if (estado_juego->puntos > jug->mejor_puntaje)
+        {
+            jug->mejor_puntaje = estado_juego->puntos;
+            jug->es_vga  = ventana->es_vga;
+            jug->escala  = ventana->escala;
+        }
+        
+        // Solo guardar en el ranking si hizo mas de 0 puntos
+        if (jug->mejor_puntaje > 0)
+        {
+            actualizar_o_agregar_jugador(tabla, jug);
+            guardar_puntajes(tabla);
+        }
+        
+        *estado_app = ESTADO_MENU;
+    }
+}
+
+//--Estadisticas
+void actualizar_estadisticas(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, TablaPuntajes* tabla)
+{
+    dibujar_estadisticas(tabla, ventana);
+    if(tecla == GBTK_ESCAPE || tecla == GBTK_ENTER)
     {
         *estado_app = ESTADO_MENU;
     }

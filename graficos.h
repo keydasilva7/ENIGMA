@@ -17,8 +17,7 @@ typedef struct
 }ResolucionVentana;
 
 // Inicializacion
-int inicializar_graficos(ResolucionVentana*, int, int);
-
+int inicializar_graficos(ResolucionVentana *, int, int);
 
 void dibujar_bloque_cuadrado(ResolucionVentana*, int, int, int);
 void dibujar_rectangulo(int, int, int, int, int);
@@ -32,6 +31,7 @@ void dibujar_ui(EstadoJuego *, ResolucionVentana *);
 void dibujar_menu(int);
 void dibujar_pantalla_pausa(ResolucionVentana*);
 void dibujar_interfaz_game_over(EstadoJuego*, ResolucionVentana*, Jugador*);
+void dibujar_estadisticas(TablaPuntajes*, ResolucionVentana*);
 
 //Var Global de Ventana (utilizada para funciones que no reciben ventana)
 extern ResolucionVentana* g_ventana;

@@ -3,20 +3,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "GBT/gbt.h"
 
 #define PIXELES_X_LADO 8 //medida de un bloque
 #define PX_PADDING 1 //separacion entre bloques
 
-#define N 15 // Transparente
-#define A 14 // Amarillo
-#define C 3  // Celeste
-#define V 2  // Verde
-
 #define FILAS_VISIBLES 20
 #define FILAS_OCULTAS 4
 #define FILAS_TOTALES 24
 #define COLUMNAS 10
+#define MAX_JUGADORES 10
 
 #define VELOCIDAD_INICIAL_MS 1000.0f // Velocidad inicial en ms
 #define FACTOR_VELOCIDAD 0.97f // Factor de reuccion cada 10 piezas (3%)
@@ -53,12 +50,21 @@ typedef struct
 
 }EstadoJuego;
 
-typedef struct {
+typedef struct
+{
     char nombre[32];
     int  es_vga;
     int  escala;
     long mejor_puntaje;
+
 } Jugador;
+
+
+typedef struct
+{
+    Jugador jugadores[MAX_JUGADORES];
+    int cantidad;
+} TablaPuntajes;
 
 extern const int COLORES_PIEZAS[7];
 
@@ -86,8 +92,9 @@ void borrar_lineas_completas(EstadoJuego*);
 void recalcular_velocidad(EstadoJuego*);
 
 // Jugador
-void guardar_jugador(const Jugador*);
-int cargar_jugador(Jugador*);
+void guardar_puntajes(const TablaPuntajes*);
+int cargar_puntajes(TablaPuntajes*);
+void actualizar_o_agregar_jugador(TablaPuntajes*, Jugador*);
 
 
 

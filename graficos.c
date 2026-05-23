@@ -1,5 +1,6 @@
 #include "graficos.h"
 #include "font8x8.h" // array: font8x8_basic[128][8]
+#include "font8x16.h" // array: font8x16_basic[128][16]
 #include <string.h>
 #include <stdio.h>
 
@@ -88,6 +89,23 @@ void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color)
     }
 }
 
+void dibujar_caracter_grande(char c, uint16_t oX, uint16_t oY, uint8_t color)
+{
+    if (c < 0 || c >= 128) return;
+
+    for (int fila = 0; fila < 16; fila++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            int pixel_encendido = (font8x16_basic[(int)c][fila] >> col) & 1;
+            if (pixel_encendido)
+            {
+                gbt_dibujar_pixel(oX + col, oY + fila, color);
+            }
+        }
+    }
+}
+
 void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
 {
     uint16_t x_actual = oX;
@@ -96,6 +114,18 @@ void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
     {
         dibujar_caracter(*texto, x_actual, oY, color);
         x_actual += 8; // Avanzamos 8 pixeles a la derecha para el siguiente caracter
+        texto++;
+    }
+}
+
+void dibujar_texto_grande(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
+{
+    uint16_t x_actual = oX;
+
+    while (*texto)
+    {
+        dibujar_caracter_grande(*texto, x_actual, oY, color);
+        x_actual += 8;
         texto++;
     }
 }
@@ -115,16 +145,16 @@ void dibujar_menu(int opcion_seleccionada)
     // Título
     const char* titulo = "=== TETRIS ===";
     int x_titulo = cx - (int)(strlen(titulo) * 8) / 2;
-    dibujar_texto(titulo, x_titulo, g_ventana->es_vga ? 60 : 20, 14);
+    dibujar_texto_grande(titulo, x_titulo, g_ventana->es_vga ? 60 : 20, 14);
 
-    const char* etiquetas[3] = {"  JUGAR  ", " AJUSTES ", "  SALIR  "};
+    const char* etiquetas[4] = {"  JUGAR  ", " AJUSTES ", " RANKING ", "  SALIR  "};
     // Colores: seleccionado=amarillo/blanco, normal=gris/gris oscuro
     int color_borde_sel = 14; // Amarillo
     int color_texto_sel = 15; // Blanco
     int color_borde_nor =  7; // Gris claro
     int color_texto_nor =  8; // Gris oscuro
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 4; i++)
     {
         int y_boton = y_inicio + i * (alto_boton + separacion);
 
@@ -326,7 +356,8 @@ void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana,
 {
     dibujar_tablero(estado, ventana);
 
-    int cx       = ventana->ancho / 2;
+    // Posicionar a la derecha en lugar del centro absoluto
+    int cx       = ventana->es_vga ? 520 : 255;
     int cy       = ventana->alto  / 2;
     int sep      = 14;
 
@@ -338,21 +369,19 @@ void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana,
 
     const char* lineas[] =
     {
-        "===================",
-        "    GAME  OVER     ",
-        "===================",
+        "  GAME OVER  ",
         buf_pts,
         buf_lin,
         buf_niv,
         buf_mejor,
-        " Enter/Esp: Menu  "
+        " Enter: Menu "
     };
-    int n = 7;
+    int n = 6;
 
     int y_base = cy - (n * sep) / 2;
     for (int i = 0; i < n; i++)
     {
-        int color = (i == 1) ? 12 : (i == 0 || i == 2) ? 12 : 7;
+        int color = (i == 0) ? 12 : 7;
         if (i == n - 1) color = 11;
         int x = cx - (int)(strlen(lineas[i]) * 8) / 2;
         dibujar_texto(lineas[i], x, y_base + i * sep, color);
@@ -366,52 +395,70 @@ int actualizar_ingreso_nombre(eGBT_Tecla tecla, Jugador* jug, ResolucionVentana*
     int cy = ventana->alto  / 2;
 
     // Formulario
-    dibujar_texto("=== TETRIS ===", cx - 7*8, cy - 50, 14);
+    dibujar_texto_grande("=== TETRIS ===", cx - 7*8, cy - 50, 14);
     dibujar_texto("Ingresa tu nombre:", cx - 9*8, cy - 20, 7);
 
     char display[36];
-    snprintf(display, sizeof(display), "[ %-16s]", jug->nombre);
-    dibujar_texto(display, cx - 9*8, cy, 15);
+    sprintf(display, "[ %-16s]", jug->nombre);
+    dibujar_texto(display, cx - 9*8, cy, 14);
 
     dibujar_texto("Enter: Confirmar", cx - 8*8, cy + 20, 8);
     dibujar_texto("Backspace: Borrar", cx - 8*8, cy + 32, 8);
 
     int len = strlen(jug->nombre);
 
-    // Mapeamos cada tecla a su caracter
-    struct
+    // Letras minúsculas
+    if (tecla >= 'a' && tecla <= 'z' && len < 16)
     {
-        eGBT_Tecla t;
-        char c;
-    } mapa[] =
+        jug->nombre[len]     = (char)(tecla - 'a' + 'A');
+        jug->nombre[len + 1] = '\0';
+    }
+    // Letras mayúsculas (por si el SO envía mayúsculas directo)
+    else if (tecla >= 'A' && tecla <= 'Z' && len < 16)
     {
-        {GBTK_a,'A'},{GBTK_b,'B'},{GBTK_c,'C'},{GBTK_d,'D'},{GBTK_e,'E'},
-        {GBTK_f,'F'},{GBTK_g,'G'},{GBTK_h,'H'},{GBTK_i,'I'},{GBTK_j,'J'},
-        {GBTK_k,'K'},{GBTK_l,'L'},{GBTK_m,'M'},{GBTK_n,'N'},{GBTK_o,'O'},
-        {GBTK_p,'P'},{GBTK_q,'Q'},{GBTK_r,'R'},{GBTK_s,'S'},{GBTK_t,'T'},
-        {GBTK_u,'U'},{GBTK_v,'V'},{GBTK_w,'W'},{GBTK_x,'X'},{GBTK_y,'Y'},
-        {GBTK_z,'Z'},
-        {GBTK_0,'0'},{GBTK_1,'1'},{GBTK_2,'2'},{GBTK_3,'3'},{GBTK_4,'4'},
-        {GBTK_5,'5'},{GBTK_6,'6'},{GBTK_7,'7'},{GBTK_8,'8'},{GBTK_9,'9'},
-        {GBTK_ESPACIO,'_'}
-    };
-    int n_mapa = sizeof(mapa) / sizeof(mapa[0]);
-
-    for (int i = 0; i < n_mapa; i++)
+        jug->nombre[len]     = (char)tecla;
+        jug->nombre[len + 1] = '\0';
+    }
+    // Números
+    else if (tecla >= '0' && tecla <= '9' && len < 16)
     {
-        if (gbt_tecla_presionada(mapa[i].t) && len < 16)
-        {
-            jug->nombre[len]     = mapa[i].c;
-            jug->nombre[len + 1] = '\0';
-            break;
-        }
+        jug->nombre[len]     = (char)tecla;
+        jug->nombre[len + 1] = '\0';
+    }
+    // Espacio
+    else if (tecla == ' ' && len < 16)
+    {
+        jug->nombre[len]     = '_';
+        jug->nombre[len + 1] = '\0';
     }
 
-    if (gbt_tecla_presionada(GBTK_RETROCESO) && len > 0)
+    // Retroceso (Backspace es ASCII 8)
+    if (tecla == '\b' && len > 0)
         jug->nombre[len - 1] = '\0';
 
-    if (gbt_tecla_presionada(GBTK_ENTER) && len > 0)
+    // Enter (ASCII 13)
+    if (tecla == '\r' && len > 0)
         return 1;
 
     return 0;
 }
+
+void dibujar_estadisticas(TablaPuntajes* t, ResolucionVentana* ventana)
+{
+    int cx = ventana->ancho / 2;
+    dibujar_texto_grande("=== MEJORES PUNTAJES ===", cx - 12*8, ventana->es_vga ? 60 : 20, 11);
+    
+    int y_base = ventana->es_vga ? 100 : 45;
+    for(int i=0; i < t->cantidad; i++) {
+        char buffer[64];
+        sprintf(buffer, "%d. %-15s %ld", i+1, t->jugadores[i].nombre, t->jugadores[i].mejor_puntaje);
+        dibujar_texto(buffer, cx - 13*8, y_base + i * (ventana->es_vga ? 20 : 10), 14);
+    }
+    
+    if(t->cantidad == 0) {
+        dibujar_texto("No hay estadisticas aun", cx - 11*8, y_base, 7);
+    }
+    
+    dibujar_texto("ESC: Volver al menu", cx - 9*8, ventana->es_vga ? 400 : 180, 8);
+}
+

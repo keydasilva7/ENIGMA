@@ -208,10 +208,12 @@ int rotar_pieza_actual(EstadoJuego* estado, int direccion)
         return 1;
     }
 
-    int kicks[] = {1, -1, 2, -2};
-    for (int k = 0; k < 4; k++)
+    int kicks_x[] = {1, -1, 2, -2, 0,  0,  1, -1};
+    int kicks_y[] = {0,  0, 0,  0, -1, -2, -1, -1}; // -1 es un "kick" hacia arriba
+    for (int k = 0; k < 8; k++)
     {
-        aux.x = estado->pieza_actual.x + kicks[k];
+        aux.x = estado->pieza_actual.x + kicks_x[k];
+        aux.y = estado->pieza_actual.y + kicks_y[k];
         if (!colision(estado, &aux))
         {
             estado->pieza_actual = aux;
@@ -227,7 +229,6 @@ int rotar_pieza_actual(EstadoJuego* estado, int direccion)
 
 void generar_nueva_pieza(EstadoJuego* estado)
 {
-    estado->piezas_caidas ++;
     estado->pieza_siguiente.tipo = rand() % 7;
     estado->pieza_siguiente.x = 3; // Medio del tablero
     estado->pieza_siguiente.y = 0; // Parte invisible superior
@@ -354,21 +355,73 @@ void borrar_lineas_completas(EstadoJuego* estado)
 
 //Jugador
 
-void guardar_jugador(const Jugador* p)
+void guardar_puntajes(const TablaPuntajes* p)
 {
     FILE* f = fopen(ARCHIVO_JUGADOR, "wb");
     if (!f) return;
-    fwrite(p, sizeof(Jugador), 1, f);
+    fwrite(p, sizeof(TablaPuntajes), 1, f);
     fclose(f);
 }
 
-int cargar_jugador(Jugador* p)
+int cargar_puntajes(TablaPuntajes* p)
 {
     FILE* f = fopen(ARCHIVO_JUGADOR, "rb");
-    if (!f) return 0;
-    fread(p, sizeof(Jugador), 1, f);
+    if (!f) {
+        p->cantidad = 0;
+        return 0;
+    }
+    fread(p, sizeof(TablaPuntajes), 1, f);
     fclose(f);
     return 1;
+}
+
+void actualizar_o_agregar_jugador(TablaPuntajes* t, Jugador* jug)
+{
+    int index = -1;
+    // Buscar si ya existe
+    for(int i = 0; i < t->cantidad; i++) {
+        if(strcmp(t->jugadores[i].nombre, jug->nombre) == 0) {
+            index = i;
+            break;
+        }
+    }
+    
+    if(index != -1) {
+        // Actualizar puntaje y settings si es mejor
+        if(jug->mejor_puntaje > t->jugadores[index].mejor_puntaje) {
+            t->jugadores[index].mejor_puntaje = jug->mejor_puntaje;
+        }
+        t->jugadores[index].escala = jug->escala;
+        t->jugadores[index].es_vga = jug->es_vga;
+    } else {
+        // Agregar nuevo
+        if(t->cantidad < MAX_JUGADORES) {
+            t->jugadores[t->cantidad] = *jug;
+            t->cantidad++;
+        } else {
+            // Reemplazar al de menor puntaje si este es mejor
+            int min_idx = 0;
+            for(int i=1; i < MAX_JUGADORES; i++) {
+                if(t->jugadores[i].mejor_puntaje < t->jugadores[min_idx].mejor_puntaje) {
+                    min_idx = i;
+                }
+            }
+            if(jug->mejor_puntaje > t->jugadores[min_idx].mejor_puntaje) {
+                t->jugadores[min_idx] = *jug;
+            }
+        }
+    }
+    
+    // Ordenar la tabla de mayor a menor puntaje (Burbuja)
+    for(int i = 0; i < t->cantidad - 1; i++) {
+        for(int j = 0; j < t->cantidad - i - 1; j++) {
+            if(t->jugadores[j].mejor_puntaje < t->jugadores[j+1].mejor_puntaje) {
+                Jugador temp = t->jugadores[j];
+                t->jugadores[j] = t->jugadores[j+1];
+                t->jugadores[j+1] = temp;
+            }
+        }
+    }
 }
 
 
