@@ -1,7 +1,6 @@
 #ifndef GRAFICOS_H_INCLUDED
 #define GRAFICOS_H_INCLUDED
 
-#include <stdint.h>
 #include "tetris.h"
 
 // Estado del juego
@@ -21,8 +20,10 @@ int inicializar_graficos(ResolucionVentana *, int, int);
 
 void dibujar_bloque_cuadrado(ResolucionVentana*, int, int, int);
 void dibujar_rectangulo(int, int, int, int, int);
-void dibujar_caracter(char, uint16_t, uint16_t, uint8_t);
-void dibujar_texto(const char*, uint16_t, uint16_t, uint8_t);
+void dibujar_caracter(char, int, int, int);
+void dibujar_texto(const char*, int, int, int);
+void dibujar_caracter_grande(char, int, int, int);
+void dibujar_texto_grande(const char*, int, int, int);
 
 // Pantallas
 void dibujar_tablero(EstadoJuego*, ResolucionVentana* );

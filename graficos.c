@@ -72,7 +72,7 @@ void dibujar_rectangulo(int x, int y, int ancho, int alto, int color)
     }
 }
 
-void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color)
+void dibujar_caracter(char c, int oX, int oY, int color)
 {
     if (c < 0 || c >= 128) return;
 
@@ -89,7 +89,7 @@ void dibujar_caracter(char c, uint16_t oX, uint16_t oY, uint8_t color)
     }
 }
 
-void dibujar_caracter_grande(char c, uint16_t oX, uint16_t oY, uint8_t color)
+void dibujar_caracter_grande(char c, int oX, int oY, int color)
 {
     if (c < 0 || c >= 128) return;
 
@@ -106,9 +106,9 @@ void dibujar_caracter_grande(char c, uint16_t oX, uint16_t oY, uint8_t color)
     }
 }
 
-void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
+void dibujar_texto(const char* texto, int oX, int oY, int color)
 {
-    uint16_t x_actual = oX;
+    int x_actual = oX;
 
     while (*texto)
     {
@@ -118,9 +118,9 @@ void dibujar_texto(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
     }
 }
 
-void dibujar_texto_grande(const char* texto, uint16_t oX, uint16_t oY, uint8_t color)
+void dibujar_texto_grande(const char* texto, int oX, int oY, int color)
 {
-    uint16_t x_actual = oX;
+    int x_actual = oX;
 
     while (*texto)
     {
@@ -210,7 +210,6 @@ void dibujar_pantalla_pausa(ResolucionVentana* ventana)
 }
 
 //--Tablero
-
 void dibujar_tablero(EstadoJuego *estado, ResolucionVentana *ventana)
 {
     int ancho_tablero = COLUMNAS * (ventana->tamano_bloque + PX_PADDING);
@@ -257,7 +256,6 @@ void dibujar_tablero(EstadoJuego *estado, ResolucionVentana *ventana)
 }
 
 //--Pieza activa
-
 void dibujar_pieza(EstadoJuego *estado, ResolucionVentana *ventana)
 {
     Tetromino *pieza = &estado->pieza_actual;
@@ -288,7 +286,6 @@ void dibujar_pieza(EstadoJuego *estado, ResolucionVentana *ventana)
 }
 
 //-- UI (Estadisticas + siguiente pieza + velocidad)
-
 void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
 {
     char buffer[64];
@@ -351,7 +348,6 @@ void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
 }
 
 //--Game Over
-
 void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana, Jugador* jug)
 {
     dibujar_tablero(estado, ventana);
@@ -447,18 +443,18 @@ void dibujar_estadisticas(TablaPuntajes* t, ResolucionVentana* ventana)
 {
     int cx = ventana->ancho / 2;
     dibujar_texto_grande("=== MEJORES PUNTAJES ===", cx - 12*8, ventana->es_vga ? 60 : 20, 11);
-    
+
     int y_base = ventana->es_vga ? 100 : 45;
     for(int i=0; i < t->cantidad; i++) {
         char buffer[64];
         sprintf(buffer, "%d. %-15s %ld", i+1, t->jugadores[i].nombre, t->jugadores[i].mejor_puntaje);
         dibujar_texto(buffer, cx - 13*8, y_base + i * (ventana->es_vga ? 20 : 10), 14);
     }
-    
+
     if(t->cantidad == 0) {
         dibujar_texto("No hay estadisticas aun", cx - 11*8, y_base, 7);
     }
-    
+
     dibujar_texto("ESC: Volver al menu", cx - 9*8, ventana->es_vga ? 400 : 180, 8);
 }
 

@@ -95,6 +95,7 @@ void inicializar_estructura(EstadoJuego* estado)
 //--Dificultad
 
 //Recalculamos velocidad de caida aplicando 0.97 tantas veces como niveles de 10 piezas hayan sido alcanzados
+
 void recalcular_velocidad(EstadoJuego* estado)
 {
     int niveles = estado->piezas_caidas / 10;
@@ -109,6 +110,7 @@ void recalcular_velocidad(EstadoJuego* estado)
 }
 
 //--Colision
+
 int colision(EstadoJuego *estado, Tetromino *pieza)
 {
     for (int y = 0; y < 4; y++)
@@ -136,7 +138,6 @@ int colision(EstadoJuego *estado, Tetromino *pieza)
     }
     return 0; // No hay colision
 }
-
 
 int puede_mover_pieza(EstadoJuego* estado, int movimiento_en_x, int movimiento_en_y)
 {
@@ -185,6 +186,7 @@ void rotar_matriz(int origen[][4], int destino[][4], int a_la_derecha)
 
 //Si rota y colisiona, probamos desplazarla 1 o 2 posiciones a izq/der antes de rechazar la rotacion
 //Termino denominado: wall kick
+
 int rotar_pieza_actual(EstadoJuego* estado, int direccion)
 {
     Tetromino aux = estado->pieza_actual; // Hacemos una copia para probar
@@ -291,6 +293,7 @@ void fijar_pieza(EstadoJuego* estado)
 }
 
 //--Borrar lineas
+
 void borrar_lineas_completas(EstadoJuego* estado)
 {
     int lineas_borradas_ahora = 0;
@@ -385,7 +388,7 @@ void actualizar_o_agregar_jugador(TablaPuntajes* t, Jugador* jug)
             break;
         }
     }
-    
+
     if(index != -1) {
         // Actualizar puntaje y settings si es mejor
         if(jug->mejor_puntaje > t->jugadores[index].mejor_puntaje) {
@@ -411,7 +414,7 @@ void actualizar_o_agregar_jugador(TablaPuntajes* t, Jugador* jug)
             }
         }
     }
-    
+
     // Ordenar la tabla de mayor a menor puntaje (Burbuja)
     for(int i = 0; i < t->cantidad - 1; i++) {
         for(int j = 0; j < t->cantidad - i - 1; j++) {

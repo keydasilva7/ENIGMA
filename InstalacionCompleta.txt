@@ -1,0 +1,87 @@
+================================================================================
+                                ENIGMA TETRIS
+================================================================================
+
+Este documento detalla paso a paso como compilar, ejecutar y utilizar el juego
+Tetris, desarrollado como Trabajo Practico Integrador.
+
+
+[1] REQUISITOS DEL SISTEMA
+--------------------------------------------------------------------------------
+- Sistema Operativo: Windows (10 o superior recomendado).
+- Entorno de desarrollo: Code::Blocks (o compilador GCC equivalente).
+- Libreria grafica: GBT_v2026 (Game Boy Template).
+  Descarga de la biblioteca: Proveida internamente por la catedra o repositorio
+  de la materia.
+
+
+[2] CONFIGURACION DEL ENTORNO Y COMPILACION (Code::Blocks)
+--------------------------------------------------------------------------------
+Si nunca utilizaste Code::Blocks o no tenes el entorno preparado, segui estos 
+pasos para lograr un entorno de compilacion jugable:
+
+1. Descarga e instala Code::Blocks (version con MinGW incluido).
+2. Abre Code::Blocks y crea un nuevo proyecto: File -> New -> Project -> Console Application -> C.
+3. Copia TODOS los archivos fuente de la carpeta del juego (incluyendo la carpeta GBT)
+   adentro de la carpeta de tu nuevo proyecto.
+4. En Code::Blocks, haz clic derecho sobre tu proyecto a la izquierda y elige "Add files...".
+   Selecciona todos los archivos .c y .h (main.c, tetris.c, graficos.c, font8x16.h, etc).
+5. Vuelve a hacer clic derecho en el proyecto y ve a "Build options...".
+6. Ve a la pestaña "Linker settings".
+7. En la ventana "Other linker options", agrega las siguientes lineas (necesarias para GBT y SDL2):
+   -lmingw32
+   -lSDL2main
+   -lSDL2
+8. Haz clic en "OK".
+9. Compila el programa apretando el icono del engranaje amarillo ("Build") o F9.
+
+
+[3] EJECUCION Y ARGUMENTOS DE CONSOLA
+--------------------------------------------------------------------------------
+El juego puede ejecutarse directamente haciendo doble clic en el .exe generado, o
+bien a traves de la linea de comandos (Consola de Windows) para utilizar 
+parametros personalizados:
+
+Formato de ejecucion:
+  > EnigmaTetris.exe [-vga / -cga] [-escala <n>]
+
+Argumentos:
+-vga       : Inicia el juego en resolucion VGA (640x480).
+-cga       : Inicia el juego en resolucion CGA (320x200).
+-escala N  : Define el multiplicador de tamaño de ventana (ej: -escala 2).
+
+Ejemplo de uso:
+  > EnigmaTetris.exe -vga -escala 2
+
+
+[4] COMO JUGAR (CONTROLES)
+--------------------------------------------------------------------------------
+El juego utiliza un sistema clasico de grilla donde caen "Tetrominos".
+
+Controles en Juego:
+- Flecha Izquierda : Mover pieza a la izquierda.
+- Flecha Derecha   : Mover pieza a la derecha.
+- Flecha Abajo     : Forzar caida instantanea de la pieza.
+- Tecla Z          : Rotar la pieza en sentido anti-horario.
+- Tecla Flecha Arriba: Rotar la pieza en sentido horario.
+- P o ESC          : Pausar el juego.
+
+Controles en Menu:
+- Teclas numericas : Seleccionar opcion (1, 2, 3...) segun corresponda.
+- ESC              : Volver atras o salir.
+
+Sistema de Puntuacion:
+El jugador acumula puntos al limpiar lineas. Mientras mas rapido caiga la pieza,
+mas puntos extra otorgara por tiempo. 
+Cada 10 piezas caidas, el nivel aumenta y la velocidad de caida base se incrementa.
+
+
+[5] ESTRUCTURA DEL PROYECTO
+--------------------------------------------------------------------------------
+- main.c      : Ciclo principal del juego, procesamiento de parametros y maquina de estados.
+- tetris.c/.h : Logica pura del juego (fisicas, colisiones, rotacion, puntajes).
+- graficos.c/.h: Capa de abstraccion de la libreria GBT. Renderizado y UI.
+- font8x16.h  : Datos binarios del set de caracteres gigantes para los titulos.
+- jugador.dat : Archivo binario auto-generado. Almacena estadisticas y configuraciones
+                perdurables de los jugadores (Highscores, Paleta y Velocidad).
+- GBT/        : Carpeta que contiene el core grafico provisto por la catedra.

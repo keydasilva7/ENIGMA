@@ -15,38 +15,32 @@
 #define COLUMNAS 10
 #define MAX_JUGADORES 10
 
-#define VELOCIDAD_INICIAL_MS 1000.0f // Velocidad inicial en ms
-#define FACTOR_VELOCIDAD 0.97f // Factor de reuccion cada 10 piezas (3%)
+#define VELOCIDAD_INICIAL_MS 1000.0f
+#define FACTOR_VELOCIDAD 0.97f
 
 #define ARCHIVO_JUGADOR "jugador.dat"
 
 //Nuestra estructura de pieza (I, J, L, O, S, T, Z)
-//Permite mover copiar o colisionar
+
 typedef struct
 {
-    int tipo;      // que pieza es? I=0, J=1, L=2, O=3, S=4, T=5, Z=6
-    int x, y;      // es la posicion en el tablero, sería como coordenadas en un eje x e y pero en realidad seria x la columna e y la fila
-    int forma[4][4];  // es la forma que va a tomar
+    int tipo;      // Que pieza es I=0, J=1, L=2, O=3, S=4, T=5, Z=6
+    int x, y;      // Posicion en el tablero
+    int forma[4][4];
 
 }Tetromino;
 
-// Estado del juego
+
 typedef struct
 {
-    int tablero[FILAS_TOTALES][COLUMNAS]; // 0 si esta vacio, color si esta ocupado
-
+    int tablero[FILAS_TOTALES][COLUMNAS];
     Tetromino pieza_actual;
     Tetromino pieza_siguiente;
-
     long puntos;
     int lineas;
     int piezas_caidas;
-
-
-    float velocidad_caida_ms; // milisegundos por cada caida de fila
+    float velocidad_caida_ms;
     int game_over;
-    char nombre_jugador[32];
-    long mejor_puntaje;
 
 }EstadoJuego;
 
@@ -55,6 +49,8 @@ typedef struct
     char nombre[32];
     int  es_vga;
     int  escala;
+    int  paleta;
+    float velocidad_inicial;
     long mejor_puntaje;
 
 } Jugador;

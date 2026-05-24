@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1779564545 source:d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\main.c
+1779631954 source:d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\main.c
 	"GBT/gbt.h"
 	"tetris.h"
 	"graficos.h"
@@ -9,26 +9,25 @@
 	<string.h>
 	<time.h>
 
-1779564679 d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\tetris.h
+1779631954 d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\tetris.h
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
 	"GBT/gbt.h"
 
-1779561089 source:d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\tetris.c
+1779631954 source:d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\tetris.c
 	"tetris.h"
 	<time.h>
 	<math.h>
 
-1779565052 source:d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\graficos.c
+1779631844 source:d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\graficos.c
 	"graficos.h"
 	"font8x8.h"
 	"font8x16.h"
 	<string.h>
 	<stdio.h>
 
-1779561120 d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\graficos.h
-	<stdint.h>
+1779631831 d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\graficos.h
 	"tetris.h"
 
 1778885136 d:\usuarios\marcos\unlam\programacion-unlam\topicos( cursada pan)\repotetris\enigma\font8x8.h

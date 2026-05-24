@@ -36,9 +36,10 @@ typedef enum
     ESTADO_JUGANDO,
     ESTADO_PAUSADO,
     ESTADO_GAMEOVER
+
 } EstadoAplicacion;
 
-// Prototipos modificados (ahora actualizar_ajustes recibe un puntero a entero)
+
 void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corriendo, EstadoJuego* estado_juego, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion, int* opcion_menu, Jugador* jug);
 void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, int* sub_menu, Jugador* jug, TablaPuntajes* tabla);
 void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion);
@@ -56,6 +57,14 @@ tGBT_ColorRGB paletaCGA[CANT_COLORES] =
     {0xFF, 0x55, 0x55}, {0xFF, 0x55, 0xFF}, {0xFF, 0xFF, 0x55}, {0xFF, 0xFF, 0xFF}
 };
 
+tGBT_ColorRGB paletaNeon[CANT_COLORES] =
+{
+    {0x0A, 0x0A, 0x0A}, {0xFF, 0x00, 0x55}, {0x00, 0xFF, 0xAA}, {0x55, 0x00, 0xFF},
+    {0xFF, 0xAA, 0x00}, {0x00, 0xAA, 0xFF}, {0xFF, 0x00, 0xFF}, {0xAA, 0xAA, 0xAA},
+    {0x33, 0x33, 0x33}, {0xFF, 0x55, 0x88}, {0x55, 0xFF, 0xCC}, {0x88, 0x55, 0xFF},
+    {0xFF, 0xCC, 0x55}, {0x55, 0xCC, 0xFF}, {0xFF, 0x55, 0xFF}, {0xFF, 0xFF, 0xFF}
+};
+
 int main(int argc, char* argv[])
 {
     ResolucionVentana ventana;
@@ -66,15 +75,22 @@ int main(int argc, char* argv[])
     tabla.cantidad = 0;
 
     memset(&jug, 0, sizeof(jug));
+    jug.paleta = 0;
+    jug.velocidad_inicial = 1000.0f;
+
     if(cargar_puntajes(&tabla) && tabla.cantidad > 0)
     {
         ventana.es_vga = tabla.jugadores[0].es_vga;
         ventana.escala = tabla.jugadores[0].escala;
         jug.es_vga = tabla.jugadores[0].es_vga;
         jug.escala = tabla.jugadores[0].escala;
+        jug.paleta = tabla.jugadores[0].paleta;
+        jug.velocidad_inicial = tabla.jugadores[0].velocidad_inicial;
+        if(jug.velocidad_inicial < 100.0f) jug.velocidad_inicial = 1000.0f;
     }
 
     // Procesar argumentos de linea de comandos (sobreescriben los ajustes guardados)
+
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-vga") == 0)
@@ -104,7 +120,10 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Error al iniciar entorno grafico base.\n");
         return -1;
     }
-    gbt_aplicar_paleta(paletaCGA, CANT_COLORES, GBT_FORMATO_888);
+
+    if (jug.paleta == 1) gbt_aplicar_paleta(paletaNeon, CANT_COLORES, GBT_FORMATO_888);
+    else gbt_aplicar_paleta(paletaCGA, CANT_COLORES, GBT_FORMATO_888);
+
     srand((unsigned)time(NULL));
 
     EstadoAplicacion estado_app = ESTADO_MENU;
@@ -153,8 +172,8 @@ int main(int argc, char* argv[])
                         break;
                     }
                 }
-                strncpy(estado_juego.nombre_jugador, jug.nombre, 31);
                 inicializar_juego(&estado_juego);
+                estado_juego.velocidad_caida_ms = jug.velocidad_inicial;
                 if (timer_caida) gbt_temporizador_destruir(timer_caida);
                 timer_fijacion = NULL;
                 double seg = estado_juego.velocidad_caida_ms / 1000.0;
@@ -203,8 +222,8 @@ void actualizar_velocidad(EstadoJuego* ej, tGBT_Temporizador** tc, tGBT_Temporiz
     double seg_caida = ej->velocidad_caida_ms / 1000.0;
     *tc = gbt_temporizador_crear(seg_caida);
 }
-//--MENU - selector visual con flechas
 
+//--MENU - selector visual con flechas
 void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corriendo,EstadoJuego* estado_juego, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion, int* opcion_menu, Jugador* jug)
 {
     // Mover selector con flechas
@@ -256,17 +275,32 @@ void actualizar_menu(EstadoAplicacion* estado_app, eGBT_Tecla tecla, int* corrie
 void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, ResolucionVentana* ventana, int* sub_menu, Jugador* jug, TablaPuntajes* tabla)
 {
     char buffer_texto[64];
+    int cx = ventana->ancho / 2;
+    int y_base = ventana->es_vga ? 60 : 30;
+    int sep = ventana->es_vga ? 24 : 14;
 
     if (*sub_menu == 0)
     {
-        dibujar_texto("--- AJUSTES ---", 40, 20, 11);
-        sprintf(buffer_texto, "Modo actual: %s", ventana->es_vga ? "VGA" : "CGA");
-        dibujar_texto(buffer_texto, 20, 50, 7);
-        sprintf(buffer_texto, "Escala actual: %d", ventana->escala);
-        dibujar_texto(buffer_texto, 20, 65, 7);
-        dibujar_texto("1. Cambiar Modo Grafico", 20, 95, 14);
-        dibujar_texto("2. Cambiar Escala", 20, 115, 14);
-        dibujar_texto("3. Volver al Menu", 20, 135, 12);
+        const char* titulo = "=== AJUSTES ===";
+        dibujar_texto_grande(titulo, cx - (int)(strlen(titulo)*8)/2, y_base, 11);
+
+        y_base += sep * 3;
+
+        sprintf(buffer_texto, "Paleta actual: %s", jug->paleta == 0 ? "Clasica" : "Moderna (Neon)");
+        dibujar_texto(buffer_texto, cx - (int)(strlen(buffer_texto)*8)/2, y_base, 7);
+
+        sprintf(buffer_texto, "Velocidad actual: %.0f ms", jug->velocidad_inicial);
+        dibujar_texto(buffer_texto, cx - (int)(strlen(buffer_texto)*8)/2, y_base + sep, 7);
+
+        y_base += sep * 3;
+
+        const char* op1 = "1. Cambiar Paleta";
+        const char* op2 = "2. Cambiar Velocidad";
+        const char* op3 = "3. Volver al Menu";
+
+        dibujar_texto(op1, cx - (int)(strlen(op1)*8)/2, y_base, 14);
+        dibujar_texto(op2, cx - (int)(strlen(op2)*8)/2, y_base + sep, 14);
+        dibujar_texto(op3, cx - (int)(strlen(op3)*8)/2, y_base + sep * 2, 12);
 
         if (tecla == GBTK_1) *sub_menu = 1;
         else if (tecla == GBTK_2) *sub_menu = 2;
@@ -275,25 +309,25 @@ void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
     }
     else if (*sub_menu == 1)
     {
-        dibujar_texto("--- MODO GRAFICO ---", 40, 20, 11);
-        dibujar_texto("0. CGA (320x200)", 20, 70, 14);
-        dibujar_texto("1. VGA (640x480)", 20, 90, 14);
-        dibujar_texto("Presione 0 o 1 (ESC atras)", 20, 140, 8);
+        const char* titulo = "=== PALETA ===";
+        dibujar_texto_grande(titulo, cx - (int)(strlen(titulo)*8)/2, y_base, 11);
 
-        if (tecla == GBTK_0)
+        y_base += sep * 3;
+        const char* op1 = "0. Paleta Clasica";
+        const char* op2 = "1. Paleta Moderna (Neon)";
+        const char* pie = "Presione 0 o 1 (ESC atras)";
+
+        dibujar_texto(op1, cx - (int)(strlen(op1)*8)/2, y_base, 14);
+        dibujar_texto(op2, cx - (int)(strlen(op2)*8)/2, y_base + sep, 14);
+        dibujar_texto(pie, cx - (int)(strlen(pie)*8)/2, y_base + sep * 3, 8);
+
+        if (tecla == GBTK_0 || tecla == GBTK_1)
         {
-            ventana->es_vga = 0;
-            reiniciar_entorno_grafico(ventana);
-            jug->es_vga = 0;
-            if(tabla->cantidad > 0) { tabla->jugadores[0].es_vga = 0; guardar_puntajes(tabla); }
-            *sub_menu = 0;
-        }
-        else if (tecla == GBTK_1)
-        {
-            ventana->es_vga = 1;
-            reiniciar_entorno_grafico(ventana);
-            jug->es_vga = 1;
-            if(tabla->cantidad > 0) { tabla->jugadores[0].es_vga = 1; guardar_puntajes(tabla); }
+            jug->paleta = (tecla == GBTK_0) ? 0 : 1;
+            if(jug->paleta == 1) gbt_aplicar_paleta(paletaNeon, CANT_COLORES, GBT_FORMATO_888);
+            else gbt_aplicar_paleta(paletaCGA, CANT_COLORES, GBT_FORMATO_888);
+
+            if(tabla->cantidad > 0) { tabla->jugadores[0].paleta = jug->paleta; guardar_puntajes(tabla); }
             *sub_menu = 0;
         }
         else if (tecla == GBTK_ESCAPE)
@@ -301,26 +335,30 @@ void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
     }
     else if (*sub_menu == 2)
     {
-        dibujar_texto("--- CAMBIAR ESCALA ---", 40, 20, 11);
-        dibujar_texto("1. Escala 1", 20, 60, 14);
-        dibujar_texto("2. Escala 2", 20, 80, 14);
-        dibujar_texto("3. Escala 3", 20, 100, 14);
-        dibujar_texto("4. Escala 4", 20, 120, 14);
-        dibujar_texto("Presione 1, 2, 3 o 4 (ESC atras)", 20, 140, 8);
+        const char* titulo = "=== VELOCIDAD ===";
+        dibujar_texto_grande(titulo, cx - (int)(strlen(titulo)*8)/2, y_base, 11);
 
-        int nueva_escala = 0;
-        if      (tecla == GBTK_1) nueva_escala = 1;
-        else if (tecla == GBTK_2) nueva_escala = 2;
-        else if (tecla == GBTK_3) nueva_escala = 3;
-        else if (tecla == GBTK_4) nueva_escala = 4;
+        y_base += sep * 3;
+        const char* op1 = "1. Lento (1500ms)";
+        const char* op2 = "2. Normal (1000ms)";
+        const char* op3 = "3. Rapido (500ms)";
+        const char* pie = "Presione 1, 2 o 3 (ESC atras)";
+
+        dibujar_texto(op1, cx - (int)(strlen(op1)*8)/2, y_base, 14);
+        dibujar_texto(op2, cx - (int)(strlen(op2)*8)/2, y_base + sep, 14);
+        dibujar_texto(op3, cx - (int)(strlen(op3)*8)/2, y_base + sep * 2, 14);
+        dibujar_texto(pie, cx - (int)(strlen(pie)*8)/2, y_base + sep * 4, 8);
+
+        float vel = 0;
+        if      (tecla == GBTK_1) vel = 1500.0f;
+        else if (tecla == GBTK_2) vel = 1000.0f;
+        else if (tecla == GBTK_3) vel = 500.0f;
         else if (tecla == GBTK_ESCAPE) { *sub_menu = 0; return; }
 
-        if (nueva_escala > 0)
+        if (vel > 0)
         {
-            ventana->escala = nueva_escala;
-            reiniciar_entorno_grafico(ventana);
-            jug->escala = nueva_escala;
-            if(tabla->cantidad > 0) { tabla->jugadores[0].escala = nueva_escala; guardar_puntajes(tabla); }
+            jug->velocidad_inicial = vel;
+            if(tabla->cantidad > 0) { tabla->jugadores[0].velocidad_inicial = jug->velocidad_inicial; guardar_puntajes(tabla); }
             *sub_menu = 0;
         }
     }
@@ -358,7 +396,7 @@ void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJu
 
             //A mayor velocidad, la pieza cae mas rapido sola, mayor puntos por jugador
             estado_juego->puntos += (long)(1000.0f / estado_juego -> velocidad_caida_ms);
-            
+
             // Si al bajar chocamos con el suelo, iniciamos el timer de fijación inmediatamente
             if(!puede_mover_pieza(estado_juego, 0, 1) && *timer_fijacion == NULL)
             {
@@ -450,7 +488,6 @@ void actualizar_pausado(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
 }
 
 //--Game Over
-
 void actualizar_gameover(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, Jugador* jug, TablaPuntajes* tabla)
 {
     dibujar_interfaz_game_over(estado_juego, ventana, jug);
@@ -464,14 +501,14 @@ void actualizar_gameover(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJ
             jug->es_vga  = ventana->es_vga;
             jug->escala  = ventana->escala;
         }
-        
+
         // Solo guardar en el ranking si hizo mas de 0 puntos
         if (jug->mejor_puntaje > 0)
         {
             actualizar_o_agregar_jugador(tabla, jug);
             guardar_puntajes(tabla);
         }
-        
+
         *estado_app = ESTADO_MENU;
     }
 }
