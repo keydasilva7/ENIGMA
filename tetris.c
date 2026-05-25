@@ -98,12 +98,8 @@ void inicializar_estructura(EstadoJuego* estado)
 
 void recalcular_velocidad(EstadoJuego* estado)
 {
-    int niveles = estado->piezas_caidas / 10;
-    float v = VELOCIDAD_INICIAL_MS;
-    for(int i = 0; i < niveles; i++)
-    {
-        v *= FACTOR_VELOCIDAD;
-    }
+float v = estado->velocidad_caida_ms * FACTOR_VELOCIDAD;
+
     if(v < 100.0f) v = 100.0f;
     estado->velocidad_caida_ms = v;
 
@@ -350,7 +346,7 @@ void borrar_lineas_completas(EstadoJuego* estado)
         if (lineas_borradas_ahora == 1) base = 100;
         else if (lineas_borradas_ahora == 2) base = 300;
         else if (lineas_borradas_ahora == 3) base = 500;
-        else if (lineas_borradas_ahora == 4) base = 800; // TETRIS!!!!!!
+        else if (lineas_borradas_ahora == 4) base = 800;
 
         estado->puntos += (long)(base * multiplicador);
     }
@@ -378,44 +374,27 @@ int cargar_puntajes(TablaPuntajes* p)
     return 1;
 }
 
-void actualizar_o_agregar_jugador(TablaPuntajes* t, Jugador* jug)
+int buscar_jugador(const TablaPuntajes* t, const char* nombre)
 {
-    int index = -1;
-    // Buscar si ya existe
     for(int i = 0; i < t->cantidad; i++) {
-        if(strcmp(t->jugadores[i].nombre, jug->nombre) == 0) {
-            index = i;
-            break;
+        if(strcmp(t->jugadores[i].nombre, nombre) == 0) {
+            return i; // Encontrado
         }
     }
+    return -1; // No encontrado
+}
 
-    if(index != -1) {
-        // Actualizar puntaje y settings si es mejor
-        if(jug->mejor_puntaje > t->jugadores[index].mejor_puntaje) {
-            t->jugadores[index].mejor_puntaje = jug->mejor_puntaje;
-        }
-        t->jugadores[index].escala = jug->escala;
-        t->jugadores[index].es_vga = jug->es_vga;
-    } else {
-        // Agregar nuevo
-        if(t->cantidad < MAX_JUGADORES) {
-            t->jugadores[t->cantidad] = *jug;
-            t->cantidad++;
-        } else {
-            // Reemplazar al de menor puntaje si este es mejor
-            int min_idx = 0;
-            for(int i=1; i < MAX_JUGADORES; i++) {
-                if(t->jugadores[i].mejor_puntaje < t->jugadores[min_idx].mejor_puntaje) {
-                    min_idx = i;
-                }
-            }
-            if(jug->mejor_puntaje > t->jugadores[min_idx].mejor_puntaje) {
-                t->jugadores[min_idx] = *jug;
-            }
-        }
+void actualizar_record_existente(TablaPuntajes* t, int index, const Jugador* jug)
+{
+    if(jug->mejor_puntaje > t->jugadores[index].mejor_puntaje) {
+        t->jugadores[index].mejor_puntaje = jug->mejor_puntaje;
     }
+    // Guardamos su última preferencia de paleta de colores
+    t->jugadores[index].paleta = jug->paleta;
+}
 
-    // Ordenar la tabla de mayor a menor puntaje (Burbuja)
+void ordenar_tabla_burbuja(TablaPuntajes* t)
+{
     for(int i = 0; i < t->cantidad - 1; i++) {
         for(int j = 0; j < t->cantidad - i - 1; j++) {
             if(t->jugadores[j].mejor_puntaje < t->jugadores[j+1].mejor_puntaje) {
@@ -427,7 +406,36 @@ void actualizar_o_agregar_jugador(TablaPuntajes* t, Jugador* jug)
     }
 }
 
+void insertar_nuevo_o_reemplazar_peor(TablaPuntajes* t, const Jugador* jug)
+{
+    // Si todavía hay espacio en el ranking, lo agregamos al final
+    if(t->cantidad < MAX_JUGADORES) {
+        t->jugadores[t->cantidad] = *jug;
+        t->cantidad++;
+    }
+    // Si la tabla está llena (10 de 10), buscamos al que tenga el peor puntaje
+    else {
+        int min_idx = 0;
+        for(int i = 1; i < MAX_JUGADORES; i++) {
+            if(t->jugadores[i].mejor_puntaje < t->jugadores[min_idx].mejor_puntaje) {
+                min_idx = i;
+            }
+        }
+        // Si el jugador actual es mejor que el peor del ranking, lo reemplaza
+        if(jug->mejor_puntaje > t->jugadores[min_idx].mejor_puntaje) {
+            t->jugadores[min_idx] = *jug;
+        }
+    }
+}
 
+void actualizar_o_agregar_jugador(TablaPuntajes* t, Jugador* jug)
+{
+    int index = buscar_jugador(t, jug->nombre);
 
-
-
+    if (index != -1) {
+        actualizar_record_existente(t, index, jug);
+    } else {
+        insertar_nuevo_o_reemplazar_peor(t, jug);
+    }
+    ordenar_tabla_burbuja(t);
+}

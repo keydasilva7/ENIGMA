@@ -20,6 +20,19 @@
 
 #define ARCHIVO_JUGADOR "jugador.dat"
 
+typedef enum
+{
+    ESTADO_PRESENTACION,
+    ESTADO_MENU,
+    ESTADO_INGRESO_NOMBRE,
+    ESTADO_AJUSTES,
+    ESTADO_ESTADISTICAS,
+    ESTADO_JUGANDO,
+    ESTADO_PAUSADO,
+    ESTADO_GAMEOVER
+
+} EstadoAplicacion;
+
 //Nuestra estructura de pieza (I, J, L, O, S, T, Z)
 
 typedef struct
@@ -90,6 +103,10 @@ void recalcular_velocidad(EstadoJuego*);
 // Jugador
 void guardar_puntajes(const TablaPuntajes*);
 int cargar_puntajes(TablaPuntajes*);
+int buscar_jugador(const TablaPuntajes*, const char*);
+void actualizar_record_existente(TablaPuntajes*, int, const Jugador*);
+void insertar_nuevo_o_reemplazar_peor(TablaPuntajes*, const Jugador*);
+void ordenar_tabla_burbuja(TablaPuntajes*);
 void actualizar_o_agregar_jugador(TablaPuntajes*, Jugador*);
 
 

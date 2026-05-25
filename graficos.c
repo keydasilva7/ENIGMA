@@ -16,8 +16,6 @@ const int COLORES_PIEZAS[7] =
     4    // 6: Pieza Z (Rojo)
 };
 
-ResolucionVentana* g_ventana = NULL;
-
 //--Inicialización
 
 int inicializar_graficos(ResolucionVentana* ventana, int escala, int es_vga)
@@ -42,7 +40,6 @@ int inicializar_graficos(ResolucionVentana* ventana, int escala, int es_vga)
         return -1;
     }
 
-    g_ventana = ventana;
     return 0;
 }
 
@@ -131,26 +128,26 @@ void dibujar_texto_grande(const char* texto, int oX, int oY, int color)
 }
 
 //--Menu con selector visual
-void dibujar_menu(int opcion_seleccionada)
+void dibujar_menu(int opcion_seleccionada, ResolucionVentana* ventana)
 {
-    if (!g_ventana) return;
+    if (!ventana) return;
 
-    int cx = g_ventana->ancho / 2;   // centro horizontal
-    int ancho_boton = g_ventana->es_vga ? 160 : 100;
-    int alto_boton  = g_ventana->es_vga ?  28  :  16;
-    int separacion  = g_ventana->es_vga ?  12  :   6;
+    int cx = ventana->ancho / 2;   // centro horizontal
+    int ancho_boton = ventana->es_vga ? 160 : 100;
+    int alto_boton  = ventana->es_vga ?  28  :  16;
+    int separacion  = ventana->es_vga ?  12  :   6;
     int x_boton     = cx - ancho_boton / 2;
-    int y_inicio    = g_ventana->es_vga ? 160 :  70;
+    int y_inicio    = ventana->es_vga ? 160 :  70;
 
     // Título
     const char* titulo = "=== TETRIS ===";
     int x_titulo = cx - (int)(strlen(titulo) * 8) / 2;
-    dibujar_texto_grande(titulo, x_titulo, g_ventana->es_vga ? 60 : 20, 14);
+    dibujar_texto_grande(titulo, x_titulo, ventana->es_vga ? 60 : 20, 14);
 
     const char* etiquetas[4] = {"  JUGAR  ", " AJUSTES ", " RANKING ", "  SALIR  "};
     // Colores: seleccionado=amarillo/blanco, normal=gris/gris oscuro
     int color_borde_sel = 14; // Amarillo
-    int color_texto_sel = 15; // Blanco
+    int color_texto_sel = 14; // Amarillo
     int color_borde_nor =  7; // Gris claro
     int color_texto_nor =  8; // Gris oscuro
 
@@ -180,7 +177,7 @@ void dibujar_menu(int opcion_seleccionada)
     // Instrucciones al pie
     const char* ayuda = "Flechas + Enter   o   1/2/3";
     int x_ayuda = cx - (int)(strlen(ayuda) * 8) / 2;
-    dibujar_texto(ayuda, x_ayuda, g_ventana->es_vga ? 380 : 170, 8);
+    dibujar_texto(ayuda, x_ayuda, ventana->es_vga ? 380 : 170, 8);
 }
 
 //--Pantalla en Pausa
@@ -317,7 +314,7 @@ void dibujar_ui(EstadoJuego *estado, ResolucionVentana *ventana)
     sprintf(buffer, "Vel:%dms", (int)estado->velocidad_caida_ms);
     dibujar_texto(buffer, x_izquierda, y_vel, 11);
 
-    // 2. Dibujar Proxima Pieza (Previsualizacion)
+    // 2. Dibujar Proxima Pieza
     dibujar_texto("Siguiente:", x_derecha, y_puntos, 7);
 
     int p_offset_x = x_derecha;
@@ -370,9 +367,10 @@ void dibujar_interfaz_game_over(EstadoJuego* estado, ResolucionVentana* ventana,
         buf_lin,
         buf_niv,
         buf_mejor,
-        " Enter: Menu "
+        "Esc: Menu",
+        "Enter: Jugar"
     };
-    int n = 6;
+    int n = 7;
 
     int y_base = cy - (n * sep) / 2;
     for (int i = 0; i < n; i++)
@@ -409,7 +407,7 @@ int actualizar_ingreso_nombre(eGBT_Tecla tecla, Jugador* jug, ResolucionVentana*
         jug->nombre[len]     = (char)(tecla - 'a' + 'A');
         jug->nombre[len + 1] = '\0';
     }
-    // Letras mayúsculas (por si el SO envía mayúsculas directo)
+    // Letras mayúsculas
     else if (tecla >= 'A' && tecla <= 'Z' && len < 16)
     {
         jug->nombre[len]     = (char)tecla;
@@ -428,7 +426,7 @@ int actualizar_ingreso_nombre(eGBT_Tecla tecla, Jugador* jug, ResolucionVentana*
         jug->nombre[len + 1] = '\0';
     }
 
-    // Retroceso (Backspace es ASCII 8)
+    // Retroceso
     if (tecla == '\b' && len > 0)
         jug->nombre[len - 1] = '\0';
 
@@ -439,22 +437,74 @@ int actualizar_ingreso_nombre(eGBT_Tecla tecla, Jugador* jug, ResolucionVentana*
     return 0;
 }
 
+void dibujar_caracter_escalado(char c, int oX, int oY, int color, int escala)
+{
+    if (c < 0 || c >= 128) return;
+
+    for (int fila = 0; fila < 16; fila++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            int pixel_encendido = (font8x16_basic[(int)c][fila] >> col) & 1;
+            if (pixel_encendido)
+            {
+                // Dibuja un bloque relleno de tamaño 'escala x escala' por cada píxel de la fuente
+                for (int ey = 0; ey < escala; ey++)
+                {
+                    for (int ex = 0; ex < escala; ex++)
+                    {
+                        gbt_dibujar_pixel(oX + col * escala + ex, oY + fila * escala + ey, color);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void dibujar_estadisticas(TablaPuntajes* t, ResolucionVentana* ventana)
 {
     int cx = ventana->ancho / 2;
-    dibujar_texto_grande("=== MEJORES PUNTAJES ===", cx - 12*8, ventana->es_vga ? 60 : 20, 11);
 
-    int y_base = ventana->es_vga ? 100 : 45;
-    for(int i=0; i < t->cantidad; i++) {
+    // Título principal en la parte superior
+    dibujar_texto_grande("=== RANKING ===", cx - 7*8, ventana->es_vga ? 40 : 15, 11);
+
+    int ancho_tabla = ventana->es_vga ? 240 : 170;
+    int alto_fila   = ventana->es_vga ?  22  :  13;
+    int separacion  = ventana->es_vga ?   6  :   3;
+    int x_tabla     = cx - ancho_tabla / 2;
+    int y_inicio    = ventana->es_vga ? 90 :  40;
+
+    // Dibujamos las filas de puntajes existentes
+    for(int i = 0; i < t->cantidad; i++)
+    {
+        int y_fila = y_inicio + i * (alto_fila + separacion);
+
+        dibujar_rectangulo(x_tabla, y_fila, ancho_tabla, alto_fila, 7);
+
         char buffer[64];
-        sprintf(buffer, "%d. %-15s %ld", i+1, t->jugadores[i].nombre, t->jugadores[i].mejor_puntaje);
-        dibujar_texto(buffer, cx - 13*8, y_base + i * (ventana->es_vga ? 20 : 10), 14);
+        snprintf(buffer, sizeof(buffer), "%d. %-10s %5ld", i + 1, t->jugadores[i].nombre, t->jugadores[i].mejor_puntaje);
+
+        int x_txt = x_tabla + 8;
+        int y_txt = y_fila + (alto_fila - 8) / 2;
+
+        dibujar_texto(buffer, x_txt, y_txt, (i == 0) ? 14 : 7);
     }
 
-    if(t->cantidad == 0) {
-        dibujar_texto("No hay estadisticas aun", cx - 11*8, y_base, 7);
+    // Si la cantidad real de puntuaciones es 0, muestra el cartel de respaldo de forma directa
+    if(t->cantidad == 0)
+    {
+        dibujar_texto("No hay puntuaciones", cx - 9*8, y_inicio + 20, 8);
     }
 
-    dibujar_texto("ESC: Volver al menu", cx - 9*8, ventana->es_vga ? 400 : 180, 8);
+    // Botón de salida estético al pie de la pantalla
+    int y_pie     = ventana->es_vga ? 390 : 165;
+    int ancho_btn = ventana->es_vga ? 160 : 100;
+    int alto_btn  = ventana->es_vga ?  24  :  14;
+    int x_btn     = cx - ancho_btn / 2;
+
+    dibujar_rectangulo(x_btn, y_pie, ancho_btn, alto_btn, 12);
+
+    int xb_txt = x_btn + (ancho_btn - (int)(strlen("ESC: Volver") * 8)) / 2;
+    int yb_txt = y_pie + (alto_btn - 8) / 2;
+    dibujar_texto("ESC: Volver", xb_txt, yb_txt, 12);
 }
-

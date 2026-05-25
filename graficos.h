@@ -29,13 +29,11 @@ void dibujar_texto_grande(const char*, int, int, int);
 void dibujar_tablero(EstadoJuego*, ResolucionVentana* );
 void dibujar_pieza(EstadoJuego *, ResolucionVentana* );
 void dibujar_ui(EstadoJuego *, ResolucionVentana *);
-void dibujar_menu(int);
+void dibujar_menu(int, ResolucionVentana*);
 void dibujar_pantalla_pausa(ResolucionVentana*);
 void dibujar_interfaz_game_over(EstadoJuego*, ResolucionVentana*, Jugador*);
 void dibujar_estadisticas(TablaPuntajes*, ResolucionVentana*);
-
-//Var Global de Ventana (utilizada para funciones que no reciben ventana)
-extern ResolucionVentana* g_ventana;
+void dibujar_caracter_escalado(char, int, int, int, int);
 
 //Jugador
 int actualizar_ingreso_nombre(eGBT_Tecla, Jugador*, ResolucionVentana*);
