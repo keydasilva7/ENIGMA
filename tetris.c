@@ -220,7 +220,7 @@ int rotar_pieza_actual(EstadoJuego* estado, int direccion)
     }
 
 
-    return 0;//rotación imposible
+    return 0;//rotacion imposible
 }
 
 //--Generar pieza
@@ -296,7 +296,7 @@ void borrar_lineas_completas(EstadoJuego* estado)
 
     for (int fila = FILAS_TOTALES - 1; fila >= 0; fila--)// Recorremos el tablero de abajo hacia arriba
     {
-        // Verificamos si la fila actual está completamente llena
+        // Verificamos si la fila actual esta completamente llena
 
         int fila_llena = 1;
         for (int col = 0; col < COLUMNAS; col++)
@@ -311,7 +311,7 @@ void borrar_lineas_completas(EstadoJuego* estado)
         if (fila_llena)
         {
             lineas_borradas_ahora++;
-            // Hacer caer todas las filas que están por encima de la que borramos
+            // Hacer caer todas las filas que estan por encima de la que borramos
             for (int fila_arriba = fila; fila_arriba > 0; fila_arriba--)
             {
                 for (int col = 0; col < COLUMNAS; col++)
@@ -328,7 +328,7 @@ void borrar_lineas_completas(EstadoJuego* estado)
             }
 
             //Como todas las filas cayeron, la fila que acaba de ocupar este
-            // lugar también podria estar llena. Por lo tanto, incrementamos 'fila' para
+            // lugar tambien podria estar llena. Por lo tanto, incrementamos 'fila' para
             // que el 'fila--' del for nos vuelva a dejar en el mismo lugar y la reevalue.
             fila++;
         }
@@ -339,8 +339,8 @@ void borrar_lineas_completas(EstadoJuego* estado)
     {
         estado->lineas += lineas_borradas_ahora;
 
-        // Sistema de puntos clasico (mientras mas líneas rompes juntas, mas puntos ganas)
-        // A mayor velocidad (ms más bajo) más puntos
+        // Sistema de puntos clasico (mientras mas lineas rompes juntas, mas puntos ganas)
+        // A mayor velocidad (ms mas bajo) mas puntos
         float multiplicador = VELOCIDAD_INICIAL_MS / estado->velocidad_caida_ms;
         long base = 0;
         if (lineas_borradas_ahora == 1) base = 100;
@@ -389,7 +389,7 @@ void actualizar_record_existente(TablaPuntajes* t, int index, const Jugador* jug
     if(jug->mejor_puntaje > t->jugadores[index].mejor_puntaje) {
         t->jugadores[index].mejor_puntaje = jug->mejor_puntaje;
     }
-    // Guardamos su última preferencia de paleta de colores
+    // Guardamos su ultima preferencia de paleta de colores
     t->jugadores[index].paleta = jug->paleta;
 }
 
@@ -408,12 +408,12 @@ void ordenar_tabla_burbuja(TablaPuntajes* t)
 
 void insertar_nuevo_o_reemplazar_peor(TablaPuntajes* t, const Jugador* jug)
 {
-    // Si todavía hay espacio en el ranking, lo agregamos al final
+    // Si todavia hay espacio en el ranking, lo agregamos al final
     if(t->cantidad < MAX_JUGADORES) {
         t->jugadores[t->cantidad] = *jug;
         t->cantidad++;
     }
-    // Si la tabla está llena (10 de 10), buscamos al que tenga el peor puntaje
+    // Si la tabla esta llena (10 de 10), buscamos al que tenga el peor puntaje
     else {
         int min_idx = 0;
         for(int i = 1; i < MAX_JUGADORES; i++) {

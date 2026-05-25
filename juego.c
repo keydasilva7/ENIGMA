@@ -21,7 +21,7 @@ void actualizar_presentacion(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Res
     int cx = ventana->ancho / 2;
     int cy = ventana->alto  / 2;
 
-    // Contador estático de frames
+    // Contador estatico de frames
     static int contador_frames = 0;
     contador_frames++;
 
@@ -59,7 +59,7 @@ void actualizar_presentacion(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Res
     int y_pie = ventana->alto - 15;
     dibujar_texto(buffer_pie, x_pie, y_pie, 7);
 
-    // Transición de estado al presionar Enter o Espacio
+    // Transicion de estado al presionar Enter o Espacio
     if (tecla == GBTK_ENTER || tecla == GBTK_ESPACIO)
     {
         *estado_app = ESTADO_INGRESO_NOMBRE;
@@ -68,14 +68,14 @@ void actualizar_presentacion(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Res
 
 void procesar_ingreso_nombre(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Jugador* jug, ResolucionVentana* ventana, TablaPuntajes* tabla)
 {
-    // Llamamos a la función que dibuja y lee el teclado
+    // Llamamos a la funcion que dibuja y lee el teclado
     if (actualizar_ingreso_nombre(tecla, jug, ventana))
     {
         // Inicializamos valores por defecto por si es un jugador nuevo
         jug->mejor_puntaje = 0;
         jug->paleta = 0;
 
-        // Buscamos si el usuario ya existe usando nuestra función limpia
+        // Buscamos si el usuario ya existe usando nuestra funcion limpia
         int index = buscar_jugador(tabla, jug->nombre);
 
         if (index != -1)
@@ -90,12 +90,12 @@ void procesar_ingreso_nombre(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Jug
         else
             gbt_aplicar_paleta(paletaCGA, CANT_COLORES, GBT_FORMATO_888);
 
-        // Hacemos el cambio de estado de forma interna, igual que las demás
+        // Hacemos el cambio de estado de forma interna, igual que las demas
         *estado_app = ESTADO_MENU;
     }
 }
 
-//-----Velocidad: recalcula ambos timers según piezas_caidas
+//-----Velocidad: recalcula ambos timers segun piezas_caidas
 //cada 10 piezas la velocidad sube un 3% (multiplicamos por 0.97)
 
 void actualizar_velocidad(EstadoJuego* ej, tGBT_Temporizador** tc, tGBT_Temporizador** tf)
@@ -422,67 +422,39 @@ void actualizar_ajustes(EstadoAplicacion* estado_app, eGBT_Tecla tecla, Resoluci
 //--Jugando
 void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJuego* estado_juego, ResolucionVentana* ventana, tGBT_Temporizador** timer_caida, tGBT_Temporizador** timer_fijacion)
 {
-    // Lógica de Pausa
+    static int frames_abajo_mantenido = 0;
+
+    // Logica de Pausa
     if (tecla == GBTK_ESCAPE || tecla == GBTK_p)
     {
         *estado_app = ESTADO_PAUSADO;
         return;
     }
-
-    //-- Movimiento horizontal y Rotación con Reseteo de Fijación
     if (tecla == GBTK_IZQUIERDA)
-    {
         mover_pieza(estado_juego, -1, 0);
 
-        if (*timer_fijacion != NULL)
-        {
-            gbt_temporizador_destruir(*timer_fijacion);
-            *timer_fijacion = NULL;
-        }
-    }
     else if (tecla == GBTK_DERECHA)
-    {
         mover_pieza(estado_juego, 1, 0);
-        if (*timer_fijacion != NULL)
-        {
-            gbt_temporizador_destruir(*timer_fijacion);
-            *timer_fijacion = NULL;
-        }
-    }
-    else if (tecla == GBTK_ARRIBA || tecla == GBTK_ESPACIO)
-    {
-        rotar_pieza_actual(estado_juego, 1);
-        if (*timer_fijacion != NULL)
-        {
-            gbt_temporizador_destruir(*timer_fijacion);
-            *timer_fijacion = NULL;
-        }
-    }
-    else if (tecla == GBTK_z)
-    {
-        rotar_pieza_actual(estado_juego, -1);
-        if (*timer_fijacion != NULL)
-        {
-            gbt_temporizador_destruir(*timer_fijacion);
-            *timer_fijacion = NULL;
-        }
-    }
 
-    static int frames_abajo_mantenido = 0;
-    int debe_bajar = 0;
+    else if (tecla == GBTK_ARRIBA || tecla == GBTK_ESPACIO)
+        rotar_pieza_actual(estado_juego, 1);
+
+    else if (tecla == GBTK_z)
+        rotar_pieza_actual(estado_juego, -1);
 
     if (tecla == GBTK_ABAJO)
     {
-        debe_bajar = 1;              // Baja 1 casillero inmediatamente al tocar la tecla
+        mover_pieza(estado_juego, 0, 1);
+        estado_juego->puntos++;
         frames_abajo_mantenido = 0;
     }
     else if (gbt_tecla_sostenida(GBTK_ABAJO))
     {
         frames_abajo_mantenido++;
-
         if (frames_abajo_mantenido >= 12 && (frames_abajo_mantenido - 12) % 3 == 0)
         {
-            debe_bajar = 1;
+            mover_pieza(estado_juego, 0, 1);
+            estado_juego->puntos++;
         }
     }
     else
@@ -490,72 +462,35 @@ void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJu
         frames_abajo_mantenido = 0;
     }
 
-    if (debe_bajar)
-    {
-        if (puede_mover_pieza(estado_juego, 0, 1))
-        {
-            mover_pieza(estado_juego, 0, 1);
-
-            estado_juego->puntos += (long)(1000.0f / estado_juego->velocidad_caida_ms);
-
-            if(!puede_mover_pieza(estado_juego, 0, 1) && *timer_fijacion == NULL)
-            {
-                *timer_fijacion = gbt_temporizador_crear(0.001);
-            }
-        }
-    }
-
     if (gbt_temporizador_consumir(*timer_caida))
     {
         if (puede_mover_pieza(estado_juego, 0, 1))
         {
             mover_pieza(estado_juego, 0, 1);
-
-            // Resguardo seguro contra punteros colgados
-            if (*timer_fijacion != NULL)
-            {
-                gbt_temporizador_destruir(*timer_fijacion);
-                *timer_fijacion = NULL;
-            }
         }
         else
         {
-            if (*timer_fijacion == NULL)
-            {
-                double seg_fij = (estado_juego->velocidad_caida_ms * 0.5) / 1000.0;
-                *timer_fijacion = gbt_temporizador_crear(seg_fij);
-            }
-        }
-    }
-
-    if(*timer_fijacion && gbt_temporizador_consumir(*timer_fijacion))
-    {
-        gbt_temporizador_destruir(*timer_fijacion);
-        *timer_fijacion = NULL;
-
-        if(!puede_mover_pieza(estado_juego, 0, 1))
-        {
             int piezas_antes = estado_juego->piezas_caidas;
-            estado_juego->piezas_caidas++; // Sumamos la pieza que acaba de caer al contador
+            estado_juego->piezas_caidas++;
 
             fijar_pieza(estado_juego);
             borrar_lineas_completas(estado_juego);
             estado_juego->pieza_actual = estado_juego->pieza_siguiente;
             generar_nueva_pieza(estado_juego);
 
-            // Bonus de puntos por velocidad: a mayor velocidad, más puntos al fijar
+            // Bonus de puntos por velocidad
             long bonus_velocidad = (long)(1000.0f / estado_juego->velocidad_caida_ms * 10);
             estado_juego->puntos += bonus_velocidad;
 
             // Cada 10 piezas subimos la dificultad un 3%
-            if((estado_juego->piezas_caidas / 10) > (piezas_antes / 10))
+            if ((estado_juego->piezas_caidas / 10) > (piezas_antes / 10))
             {
                 recalcular_velocidad(estado_juego);
                 actualizar_velocidad(estado_juego, timer_caida, timer_fijacion);
             }
 
             // Si la nueva pieza aparece colisionando, se declara el Game Over
-            if(!puede_mover_pieza(estado_juego, 0, 0))
+            if (!puede_mover_pieza(estado_juego, 0, 0))
             {
                 estado_juego->game_over = 1;
             }
@@ -563,7 +498,7 @@ void actualizar_jugando(EstadoAplicacion* estado_app, eGBT_Tecla tecla, EstadoJu
     }
 
     // Control de salida por fin de juego
-    if(estado_juego->game_over)
+    if (estado_juego->game_over)
     {
         *estado_app = ESTADO_GAMEOVER;
         return;
