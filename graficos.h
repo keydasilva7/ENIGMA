@@ -13,7 +13,7 @@ typedef struct
     char nombreVentana[128];
     int tamano_bloque;
 
-}ResolucionVentana;
+} ResolucionVentana;
 
 // Inicializacion
 int inicializar_graficos(ResolucionVentana *, int, int);

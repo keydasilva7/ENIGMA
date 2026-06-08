@@ -41,7 +41,7 @@ typedef struct
     int x, y;      // Posicion en el tablero
     int forma[4][4];
 
-}Tetromino;
+} Tetromino;
 
 
 typedef struct
@@ -55,7 +55,7 @@ typedef struct
     float velocidad_caida_ms;
     int game_over;
 
-}EstadoJuego;
+} EstadoJuego;
 
 typedef struct
 {
