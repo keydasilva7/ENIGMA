@@ -17,23 +17,24 @@ Tetris, desarrollado como Trabajo Practico Integrador.
 
 [2] CONFIGURACION DEL ENTORNO Y COMPILACION (Code::Blocks)
 --------------------------------------------------------------------------------
-Si nunca utilizaste Code::Blocks o no tenes el entorno preparado, segui estos 
-pasos para lograr un entorno de compilacion jugable:
+Seguí estos pasos para configurar y compilar el proyecto manualmente en la PC
+de la facultad:
 
-1. Descarga e instala Code::Blocks (version con MinGW incluido).
-2. Abre Code::Blocks y crea un nuevo proyecto: File -> New -> Project -> Console Application -> C.
-3. Copia TODOS los archivos fuente de la carpeta del juego (incluyendo la carpeta GBT)
-   adentro de la carpeta de tu nuevo proyecto.
-4. En Code::Blocks, haz clic derecho sobre tu proyecto a la izquierda y elige "Add files...".
-   Selecciona todos los archivos .c y .h (main.c, tetris.c, graficos.c, font8x16.h, etc).
-5. Vuelve a hacer clic derecho en el proyecto y ve a "Build options...".
-6. Ve a la pestaña "Linker settings".
-7. En la ventana "Other linker options", agrega las siguientes lineas (necesarias para GBT y SDL2):
-   -lmingw32
-   -lSDL2main
-   -lSDL2
-8. Haz clic en "OK".
-9. Compila el programa apretando el icono del engranaje amarillo ("Build") o F9.
+1. Crea el proyecto: Abre Code::Blocks y ve a File -> New -> Project -> Console Application -> C.
+2. Copia los archivos: Copia todos los archivos de código (.c y .h) y la carpeta "lib" dentro del directorio de tu nuevo proyecto.
+3. Agrega los archivos: En Code::Blocks, agrega todos los archivos .c y .h al árbol de archivos del proyecto (clic derecho -> Add files...).
+4. Propiedades del proyecto: Haz clic derecho en el nombre del proyecto a la izquierda y elige "Build options...".
+5. Configura el Linker: Ve a la pestaña "Linker settings". En la sección de la derecha "Other linker options", escribe:
+   -lgbt
+6. Configura las Rutas de búsqueda (Search directories):
+   - Ve a la pestaña "Search directories".
+   - En la sub-pestaña "Compiler", haz clic en "Add" y escribe:
+     lib/GBT_v2026.1C.01/include
+   - En la sub-pestaña "Linker", haz clic en "Add" y escribe:
+     lib/GBT_v2026.1C.01/lib
+7. Haz clic en "OK" para guardar los cambios de las opciones de build.
+8. Compila el juego: Presioná F9 para compilar (esto creará el ejecutable .exe en la carpeta "bin/Debug" o "bin/Release" de tu proyecto).
+9. Copiar la DLL: Copiá el archivo "gbt.dll" (que está dentro de la carpeta "lib/GBT_v2026.1C.01/lib") y pegalo exactamente adentro de la carpeta "bin/Debug" (o "bin/Release"), al lado del archivo ".exe" que se acaba de generar. (Si no haces esto, el juego no abrirá y te dará error de DLL faltante).
 
 
 [3] EJECUCION Y ARGUMENTOS DE CONSOLA
